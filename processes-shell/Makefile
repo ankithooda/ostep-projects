@@ -6,3 +6,6 @@ wish:
 
 debug:
 	mkdir -p bin && gcc -Wall -g -o bin/wish wish.c
+
+run:
+	./bin/wish
