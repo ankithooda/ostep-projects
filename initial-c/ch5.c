@@ -2,21 +2,45 @@
     Refresher of Chapter 5 K&R C.
 */
 #include <stdio.h>
+#include <string.h>
 
-char* my_strtok(char* , const char*;
+char* my_strtok_r(char* , const char*, char **);
 
 int main() {
-    int x = 5;
-    int *p = &x;
-    int **pp = &p;
-    char *buffer = NULL;
+    char *token;
+    char *saveptr;
 
-    printf("%d-%d-%d\n", x, *p, **pp);
-    printf("%s\n", take_input(buffer));
+    // char m[] = "command a b c";
+    // printf("%s\n", my_strtok_r(m, " ", &saveptr));
+
+    // strtok_r
+    char s[] = "command a b c";
+
+    token = my_strtok_r(s, " ", &saveptr);
+    printf("STRTOK_R %s\n", token);
+    while (token != NULL) {
+        token = my_strtok_r(NULL, " ", &saveptr);
+        printf("STRTOK_R %s\n", token);
+
+    }
+
     return 0;
 }
 
-char* my_strtok(char* s, const char* delim) {
-    char c = 'X';
-    return &c;
+char *my_strtok_r(char *s, const char *delim, char **saveptr) {
+
+
+    if (s == NULL) {
+        s = *saveptr;
+    }
+    if (*s == '\0') {
+        return NULL;
+    }
+    int i = 0;
+    while (*(s+i) != *delim) {
+        i = i + 1;
+    }
+    *(s+i) = '\0';
+    *saveptr = (s + i + 1);
+    return s;
 }
