@@ -10,6 +10,11 @@
 
 #define INPUT_LEN 100
 
+void process_command(char *[]);
+void parse_input(char *);
+void file_input(char *);
+void interactive();
+
 int main(int argc, char *argv[]) {
 
     char input[LINE_MAX];       // input buffer
@@ -34,40 +39,55 @@ int main(int argc, char *argv[]) {
         }
         printf("> ");
         fgets(input, LINE_MAX, input_file);
-
-        // Remove trailing newline
-        input[strcspn(input, "\n")] = '\0';
-
-        // Parse input into command and arguments.
-        command[0] = strtok_r(input, " ", &saveptr);
-        i = 1;  
-        while (command[i-1] != NULL) {
-            command[i] = strtok_r(NULL, " ", &saveptr);
-            i = i + 1;
-        }
-
-        // Run if some command has been parsed.
-        if (command[0] != NULL) {
-
-            // Create new process for the command.
-            int rc = fork();
-
-            
-
-            if (rc < 0) {
-                fprintf(stderr, "Unable to create process for running the command.\n");
-            } else if (rc == 0) {
-                int exec_code = execvp(command[0], command);
-                if (exec_code < 0) {
-                    fprintf(stderr, "%d\n%d\n", exec_code, errno);
-                    fprintf(stderr, "An error has occurred\n");
-                    _exit(EXIT_FAILURE);
-                }
-            } else {
-                // Wait for child process to terminate.
-                wait(NULL);
-            }
-        }
     }
     return 0;
+}
+
+void process_command(char *command[]) {
+    // Create new process for the command.
+    int rc = fork();
+
+    if (rc < 0) {
+        fprintf(stderr, "Unable to create process for running the command.\n");
+    } else if (rc == 0) {
+        int exec_code = execvp(command[0], command);
+        if (exec_code < 0) {
+            fprintf(stderr, "%d\n%d\n", exec_code, errno);
+            fprintf(stderr, "An error has occurred\n");
+            _exit(EXIT_FAILURE);
+        }
+    } else {
+        // Wait for child process to terminate.
+        wait(NULL);
+    }
+}
+
+char *[] parse_input(char *input) {
+    char *command[INPUT_LEN];
+
+    // Remove trailing newline
+    input[strcspn(input, "\n")] = '\0';
+
+    // Parse input into command and arguments.
+    command[0] = strtok_r(input, " ", &saveptr);
+
+    i = 1;  
+    while (command[i-1] != NULL) {
+        command[i] = strtok_r(NULL, " ", &saveptr);
+        i = i + 1;
+    }
+    return command;
+}
+
+void interactive() {
+    while (1) {
+        fprintf(stdout, "> ");
+        fgets(input, LINE_MAX, input_file);
+        char *command[] = parse_input(&input);
+        process_command(&command);
+    }
+}
+
+void file_input(char *pathname) {
+    ;
 }
