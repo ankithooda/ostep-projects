@@ -8,62 +8,46 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#define INPUT_LEN 100
+#define INPUT_LEN 1000
 
-void process_command(char *[]);
-void parse_input(char *);
-void file_input(char *);
-void interactive();
+void parse_input(char *, char *[]);
+void process(char *[]);
 
 int main(int argc, char *argv[]) {
 
-    char input[LINE_MAX];       // input buffer
+    char *input;                // input buffer
     char *command[INPUT_LEN];   // Tokenized input
-    char *saveptr;              // Internal pointer for strtok_r
-    int i;                      // iterator variable
-    FILE *input_file;
+    FILE *stream;
+    size_t len = 0;
     
     if (argc == 2) {
-        input_file = fopen(argv[1], "r+");
+        stream = fopen(argv[1], "r+");
     } else {
-        input_file = stdin;
+        stream = stdin;
     }
     while (1) {
-        // Prompt user input.
-        // Empty buffer
-        for (i = 0; i < LINE_MAX; i++) {
-            input[i] = '\0';
+        // Print prompt only in interactive mode.
+        if (argc == 1) { printf("> "); }
+        
+        if (getline(&input, &len, stream) != -1) {
+            parse_input(input, command);
+            // int i = 0;
+            // while (command[i] != NULL) {
+            //     printf("%s\n", command[i]);
+            //     i = i + 1;
+            // }
+            process(command);
+        } else {
+            free(input);
+            exit(EXIT_SUCCESS);
         }
-        for (i = 0; i < INPUT_LEN; i++) {
-            command[i] = NULL;
-        }
-        printf("> ");
-        fgets(input, LINE_MAX, input_file);
     }
     return 0;
 }
 
-void process_command(char *command[]) {
-    // Create new process for the command.
-    int rc = fork();
-
-    if (rc < 0) {
-        fprintf(stderr, "Unable to create process for running the command.\n");
-    } else if (rc == 0) {
-        int exec_code = execvp(command[0], command);
-        if (exec_code < 0) {
-            fprintf(stderr, "%d\n%d\n", exec_code, errno);
-            fprintf(stderr, "An error has occurred\n");
-            _exit(EXIT_FAILURE);
-        }
-    } else {
-        // Wait for child process to terminate.
-        wait(NULL);
-    }
-}
-
-char *[] parse_input(char *input) {
-    char *command[INPUT_LEN];
+void parse_input(char *input, char *command[]) {
+    int i = 1;
+    char *saveptr;
 
     // Remove trailing newline
     input[strcspn(input, "\n")] = '\0';
@@ -71,23 +55,29 @@ char *[] parse_input(char *input) {
     // Parse input into command and arguments.
     command[0] = strtok_r(input, " ", &saveptr);
 
-    i = 1;  
     while (command[i-1] != NULL) {
         command[i] = strtok_r(NULL, " ", &saveptr);
         i = i + 1;
     }
-    return command;
 }
 
-void interactive() {
-    while (1) {
-        fprintf(stdout, "> ");
-        fgets(input, LINE_MAX, input_file);
-        char *command[] = parse_input(&input);
-        process_command(&command);
+void process(char *command[]) {
+
+    // Special handling of exit command.
+    if (strcmp(command[0], "exit") == 0) {
+        _exit(EXIT_SUCCESS);
     }
-}
+    int rc = fork();
 
-void file_input(char *pathname) {
-    ;
+    if (rc < 0) {
+        fprintf(stderr, "Could spawn process.");
+    } else if (rc == 0) {
+        int exec_code = execvp(command[0], command);
+        if (exec_code < 0) {
+            fprintf(stderr, "An error has occurred\n");
+            _exit(EXIT_FAILURE);
+        }
+    } else {
+        wait(NULL);
+    }
 }

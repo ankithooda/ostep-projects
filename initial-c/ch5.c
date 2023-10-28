@@ -10,17 +10,14 @@ int main() {
     char *token;
     char *saveptr;
 
-    // char m[] = "command a b c";
-    // printf("%s\n", my_strtok_r(m, " ", &saveptr));
+    char s[] = "Xasa aas asassa sasa";
 
-    // strtok_r
-    char s[] = "X a";
-
-    token = my_strtok_r(s, ' ', &saveptr);
+    token = strtok_r(s, "s", &saveptr);
     printf("STRTOK_R %s\n", token);
     while (token != NULL) {
-        token = my_strtok_r(NULL, ' ', &saveptr);
+        token = strtok_r(NULL, "s", &saveptr);
         printf("STRTOK_R %s\n", token);
+        printf("SAVEPTR %s\n", (*saveptr));
 
     }
 
