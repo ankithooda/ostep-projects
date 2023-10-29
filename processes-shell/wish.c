@@ -9,17 +9,21 @@
 #include <fcntl.h>
 
 #define INPUT_LEN 1000
+#define PATH_LEN 100
+#define PATHNAME_LEN 150
+
+char path[PATH_LEN];
 
 void parse_input(char *, char *[]);
-void process(char **, char *[]);
+void process(char *[]);
 
 int main(int argc, char *argv[]) {
 
     char *input;                // input buffer
     char *command[INPUT_LEN];   // Tokenized input
     FILE *stream;
-    char *path = "/bin";
     size_t len = 0;
+    strcpy(path, "/bin");
     
     if (argc == 2) {
         stream = fopen(argv[1], "r+");
@@ -37,7 +41,7 @@ int main(int argc, char *argv[]) {
             //     printf("%s\n", command[i]);
             //     i = i + 1;
             // }
-            process(&path, command);
+            process(command);
         } else {
             free(input);
             exit(EXIT_SUCCESS);
@@ -62,7 +66,11 @@ void parse_input(char *input, char *command[]) {
     }
 }
 
-void process(char **path, char *command[]) {
+void process(char *command[]) {
+
+    char pathname[PATHNAME_LEN];
+    strcpy(pathname, path);
+
 
     // Built-in exit command
     if (strcmp(command[0], "exit") == 0) {
@@ -90,9 +98,9 @@ void process(char **path, char *command[]) {
     if (strcmp(command[0], "path") == 0) {
         // If path is invoked with 
         if (command[1] == NULL) {
-            path = NULL;
+            path[0] = '\0';
         } else {
-            *path = strdup(command[1]);
+            strcpy(path, command[1]);
         }
         return;
     }
@@ -104,7 +112,15 @@ void process(char **path, char *command[]) {
     if (rc < 0) {
         fprintf(stderr, "Could spawn process.");
     } else if (rc == 0) {
-        int exec_code = execv(*path, command);
+        if (path == NULL) {
+            strcpy(pathname, command[0]);
+        } else {
+            if (path[strlen(path) - 1] != '/') {
+                strcat(pathname, "/");
+            }
+            strcat(pathname, command[0]);
+        }
+        int exec_code = execv(pathname, command);
         if (exec_code < 0) {
             fprintf(stderr, "An error has occurred\n");
             _exit(EXIT_FAILURE);
