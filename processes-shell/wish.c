@@ -11,13 +11,14 @@
 #define INPUT_LEN 1000
 
 void parse_input(char *, char *[]);
-void process(char *[]);
+void process(char **, char *[]);
 
 int main(int argc, char *argv[]) {
 
     char *input;                // input buffer
     char *command[INPUT_LEN];   // Tokenized input
     FILE *stream;
+    char *path = "/bin";
     size_t len = 0;
     
     if (argc == 2) {
@@ -36,7 +37,7 @@ int main(int argc, char *argv[]) {
             //     printf("%s\n", command[i]);
             //     i = i + 1;
             // }
-            process(command);
+            process(&path, command);
         } else {
             free(input);
             exit(EXIT_SUCCESS);
@@ -61,18 +62,19 @@ void parse_input(char *input, char *command[]) {
     }
 }
 
-void process(char *command[]) {
+void process(char **path, char *command[]) {
 
-    // Special handling of exit command.
+    // Built-in exit command
     if (strcmp(command[0], "exit") == 0) {
         if (command[1] != NULL) {
             fprintf(stderr, "An error has occurred\n");
+            return;
         } else {
             _exit(EXIT_SUCCESS);
         }
     }
 
-    // Special handling for chdir command.
+    // Built-in cd command
     if (strcmp(command[0], "cd") == 0) {
         if (command[1] != NULL) {
             if (chdir(command[1]) == -1) {
@@ -83,12 +85,26 @@ void process(char *command[]) {
         }
         return;
     }
+
+    // Built-in path command
+    if (strcmp(command[0], "path") == 0) {
+        // If path is invoked with 
+        if (command[1] == NULL) {
+            path = NULL;
+        } else {
+            *path = strdup(command[1]);
+        }
+        return;
+    }
+
+    // Create a new process and replace it with user
+    // requested process.
     int rc = fork();
 
     if (rc < 0) {
         fprintf(stderr, "Could spawn process.");
     } else if (rc == 0) {
-        int exec_code = execvp(command[0], command);
+        int exec_code = execv(*path, command);
         if (exec_code < 0) {
             fprintf(stderr, "An error has occurred\n");
             _exit(EXIT_FAILURE);
