@@ -8,10 +8,13 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+
+// TODO: Revise this arbitrary limits.
 #define INPUT_LEN 1000
 #define PATH_LEN 100
 #define PATHNAME_LEN 150
 
+// Static variable for storing path.
 char path[PATH_LEN];
 
 void parse_input(char *, char *[]);
@@ -21,10 +24,14 @@ int main(int argc, char *argv[]) {
 
     char *input;                // input buffer
     char *command[INPUT_LEN];   // Tokenized input
-    FILE *stream;
+    FILE *stream;               // File object to represent input file or stdin.
     size_t len = 0;
+
+    // Intialize path to the bin directory.
     strcpy(path, "/bin");
     
+
+    // Set appropriate value for the input stream.
     if (argc == 2) {
         stream = fopen(argv[1], "r+");
     } else {
@@ -35,22 +42,26 @@ int main(int argc, char *argv[]) {
         if (argc == 1) { printf("> "); }
         
         if (getline(&input, &len, stream) != -1) {
-            parse_input(input, command);
-            // int i = 0;
-            // while (command[i] != NULL) {
-            //     printf("%s\n", command[i]);
-            //     i = i + 1;
-            // }
-            process(command);
+            if (strlen(input) > 1) {
+                parse_input(input, command);
+                // int i = 0;
+                // while (command[i] != NULL) {
+                //     printf("%s\n", command[i]);
+                //     i = i + 1;
+                // }
+                process(command);
+            }
         } else {
             free(input);
             exit(EXIT_SUCCESS);
         }
     }
+    // TODO: Handle SIGINT to free memory.
     return 0;
 }
 
 void parse_input(char *input, char *command[]) {
+    // TODO: Use strsep instead of strtok_r
     int i = 1;
     char *saveptr;
 
