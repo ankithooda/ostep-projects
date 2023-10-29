@@ -65,7 +65,23 @@ void process(char *command[]) {
 
     // Special handling of exit command.
     if (strcmp(command[0], "exit") == 0) {
-        _exit(EXIT_SUCCESS);
+        if (command[1] != NULL) {
+            fprintf(stderr, "An error has occurred\n");
+        } else {
+            _exit(EXIT_SUCCESS);
+        }
+    }
+
+    // Special handling for chdir command.
+    if (strcmp(command[0], "cd") == 0) {
+        if (command[1] != NULL) {
+            if (chdir(command[1]) == -1) {
+                fprintf(stderr, "An error has occurred\n");
+            }
+        } else {
+            fprintf(stderr, "An error has occurred\n");
+        }
+        return;
     }
     int rc = fork();
 
