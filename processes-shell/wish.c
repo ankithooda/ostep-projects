@@ -158,30 +158,38 @@ void process(char *command[], struct parsed_data *pd) {
         // Before we replace the process image we 
         // will open the pipes for redirection support.
         
-        int dest_fd = open(pd->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+        if (pd->redirect == 1) {
+            int dest_fd_1 = open(pd->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+            int dest_fd_2 = open(pd->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
-        if (dest_fd < 0) {
-            fprintf(stderr, "An error has occurred");
-            return;
-        }
 
-        int pipe1_fd[2];
-        pipe1_fd[0] = 1;
-        pipe1_fd[1] = dest_fd;
+            if (dest_fd_1 < 0) {
+                fprintf(stderr, "An error has occurred");
+                return;
+            }
+            if (dest_fd_2 < 0) {
+                fprintf(stderr, "An error has occurred");
+                return;
+            }
 
-        int pipe2_fd[2];
-        pipe2_fd[0] = 2;
-        pipe2_fd[1] = dest_fd;
+            int pipe1_fd[2];
+            pipe1_fd[0] = 1;
+            pipe1_fd[1] = dest_fd_1;
 
-        if (pipe2(pipe1_fd, O_CLOEXEC) < 0) {
-            fprintf(stderr, "An error has occurred");
-            return;
+            int pipe2_fd[2];
+            pipe2_fd[0] = 2;
+            pipe2_fd[1] = dest_fd_2;
 
-        }
+            if (pipe2(pipe1_fd, O_CLOEXEC) < 0) {
+                fprintf(stderr, "An error has occurred");
+                return;
 
-        if (pipe2(pipe2_fd, O_CLOEXEC) < 0) {
-            fprintf(stderr, "An error has occurred");
-            return;
+            }
+
+            if (pipe2(pipe2_fd, O_CLOEXEC) < 0) {
+                fprintf(stderr, "An error has occurred");
+                return;
+            }
         }
 
         int exec_code = execv(pathname, command);
