@@ -1,3 +1,4 @@
+#define _GNU_SOURCE 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -17,8 +18,15 @@
 // Static variable for storing path.
 char path[PATH_LEN];
 
-void parse_input(char *, char *[]);
-void process(char *[]);
+// Struct representing the parsed command.
+struct parsed_data {
+    char *command[INPUT_LEN];
+    short redirect;
+    char *redirect_file;
+};
+
+void parse_input(char *, char *[], struct parsed_data *);
+void process(char *[], struct parsed_data *);
 
 int main(int argc, char *argv[]) {
 
@@ -27,9 +35,11 @@ int main(int argc, char *argv[]) {
     FILE *stream;               // File object to represent input file or stdin.
     size_t len = 0;
 
+    struct parsed_data pd;
+
     // Intialize path to the bin directory.
     strcpy(path, "/bin");
-    
+
 
     // Set appropriate value for the input stream.
     if (argc == 2) {
@@ -43,13 +53,13 @@ int main(int argc, char *argv[]) {
         
         if (getline(&input, &len, stream) != -1) {
             if (strlen(input) > 1) {
-                parse_input(input, command);
+                parse_input(input, command, &pd);
                 // int i = 0;
                 // while (command[i] != NULL) {
                 //     printf("%s\n", command[i]);
                 //     i = i + 1;
                 // }
-                process(command);
+                process(command, &pd);
             }
         } else {
             free(input);
@@ -60,13 +70,25 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void parse_input(char *input, char *command[]) {
-    // TODO: Use strsep instead of strtok_r
+void parse_input(char *input, char *command[], struct parsed_data *pd) {
+
+
     int i = 1;
+
     char *saveptr;
 
     // Remove trailing newline
     input[strcspn(input, "\n")] = '\0';
+
+    // Parse input for redirection.
+    input = strtok_r(input, ">", &saveptr);
+
+    pd->redirect_file = strtok_r(NULL, ">", &saveptr);
+
+    if (pd->redirect_file != NULL) {
+        pd->redirect = 1;
+    }
+
 
     // Parse input into command and arguments.
     command[0] = strtok_r(input, " ", &saveptr);
@@ -77,7 +99,7 @@ void parse_input(char *input, char *command[]) {
     }
 }
 
-void process(char *command[]) {
+void process(char *command[], struct parsed_data *pd) {
 
     char pathname[PATHNAME_LEN];
     strcpy(pathname, path);
@@ -121,8 +143,9 @@ void process(char *command[]) {
     int rc = fork();
 
     if (rc < 0) {
-        fprintf(stderr, "Could spawn process.");
+        fprintf(stderr, "Could not spawn process.");
     } else if (rc == 0) {
+        // Get correct value of pathname
         if (path == NULL) {
             strcpy(pathname, command[0]);
         } else {
@@ -131,6 +154,36 @@ void process(char *command[]) {
             }
             strcat(pathname, command[0]);
         }
+
+        // Before we replace the process image we 
+        // will open the pipes for redirection support.
+        
+        int dest_fd = open(pd->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+
+        if (dest_fd < 0) {
+            fprintf(stderr, "An error has occurred");
+            return;
+        }
+
+        int pipe1_fd[2];
+        pipe1_fd[0] = 1;
+        pipe1_fd[1] = dest_fd;
+
+        int pipe2_fd[2];
+        pipe2_fd[0] = 2;
+        pipe2_fd[1] = dest_fd;
+
+        if (pipe2(pipe1_fd, O_CLOEXEC) < 0) {
+            fprintf(stderr, "An error has occurred");
+            return;
+
+        }
+
+        if (pipe2(pipe2_fd, O_CLOEXEC) < 0) {
+            fprintf(stderr, "An error has occurred");
+            return;
+        }
+
         int exec_code = execv(pathname, command);
         if (exec_code < 0) {
             fprintf(stderr, "An error has occurred\n");
