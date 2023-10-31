@@ -53,6 +53,11 @@ int main(int argc, char *argv[]) {
         
         if (getline(&input, &len, stream) != -1) {
             if (strlen(input) > 1) {
+                // Before parsing we reset pd struct
+
+                pd.redirect = -1;
+                pd.redirect_file = NULL;
+
                 parse_input(input, command, &pd);
                 // int i = 0;
                 // while (command[i] != NULL) {
@@ -161,18 +166,15 @@ void process(char *command[], struct parsed_data *pd) {
         // will open the pipes for redirection support.
         
         if (pd->redirect == 1) {
-            // int dest_fd_1 = open(pd->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-            // int dest_fd_2 = open(pd->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+            close(STDOUT_FILENO);
+            close(STDERR_FILENO);
 
+            int stdout_fd = open(pd->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+            int stderr_fd = open(pd->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
-            // if (dest_fd_1 < 0 || dest_fd_2 < 0) {
-            //     fprintf(stderr, "An error has occurred");
-            //     return;
-            // }
-
-            // dup2(dest_fd_1, STDOUT_FILENO);
-            // dup2(dest_fd_2, STDERR_FILENO);
-
+            if (stdout_fd < 0 || stderr_fd < 0) {
+                fprintf(stderr, "An error has occurred");
+            }
         }
 
         int exec_code = execv(pathname, command);
