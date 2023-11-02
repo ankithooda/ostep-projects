@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
     FILE *stream;               // File object to represent input file or stdin.
     size_t len = 0;
 
-    struct parsed_data pd;
+    struct parsed_data *pd[];
 
     // Intialize path to the bin directory.
     strcpy(path, "/bin");
@@ -81,29 +81,34 @@ void parse_input(char *input, char *command[], struct parsed_data *pd) {
     int i = 1;
 
     char *saveptr;
+    char *temp;
+    char *temp1;
 
     // Remove trailing newline
     input[strcspn(input, "\n")] = '\0';
 
-    
+    // Parse input for multiple commands with background directive.
 
-    // Parse input for redirection.
-    input = strtok_r(input, ">", &saveptr);
+    temp = strtok_r(input, "&", &saveptr);
 
-    pd->redirect_file = strtok_r(NULL, ">", &saveptr);
+    while (temp != NULL) {
+        // Parse input for redirection.
+        temp1 = strtok_r(temp, ">", &saveptr);
 
-    if (pd->redirect_file != NULL) {
-        pd->redirect = 1;
-    }
+        pd->redirect_file = strtok_r(NULL, ">", &saveptr);
 
+        if (pd->redirect_file != NULL) {
+            pd->redirect = 1;
+        }
 
-    // Parse input into command and arguments.
-    command[0] = strtok_r(input, " ", &saveptr);
+        // Parse input into command and arguments.
+        command[0] = strtok_r(input, " ", &saveptr);
 
-    while (command[i-1] != NULL) {
-        command[i] = strtok_r(NULL, " ", &saveptr);
-        i = i + 1;
-    }
+        while (command[i-1] != NULL) {
+            command[i] = strtok_r(NULL, " ", &saveptr);
+            i = i + 1;
+        }
+    }    
 }
 
 void process(char *command[], struct parsed_data *pd) {
