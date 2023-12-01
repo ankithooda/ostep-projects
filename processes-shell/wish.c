@@ -28,8 +28,11 @@ struct parsed_command {
     struct parsed_command *next;
 };
 
-struct parsed_data **parse_input(char *);
-void process(char *[], struct parsed_data *);
+// Error message
+char error_message[30] = "An error has occurred\n";
+
+struct parsed_command **parse_input(char *);
+void process(char *[], struct parsed_command **);
 
 int main(int argc, char *argv[]) {
 
@@ -38,6 +41,7 @@ int main(int argc, char *argv[]) {
     FILE *stream;               // File object to represent input file or stdin.
     size_t len = 0;
 
+    struct parsed_command **pd;
     // Intialize path to the bin directory.
     strcpy(path, "/bin");
 
@@ -49,12 +53,13 @@ int main(int argc, char *argv[]) {
     }
     while (1) {
         // Print prompt only in interactive mode.
-        if (argc == 1) { printf("> "); }
+        if (argc == 1) { printf("wish> "); }
         
         if (getline(&input, &len, stream) != -1) {
             if (strlen(input) > 1) {
-                parse_input(input, pd);
-                // process(command, &pd);
+                pd = parse_input(input);
+                ;
+                // process(command, pd);
             }
         } else {
             free(input);
@@ -65,11 +70,10 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-struct parsed_data ** parse_input(char *input) {
+struct parsed_command **parse_input(char *input) {
 
 
     char *command, *command_args, *command_arg;
-    int command_index = 0;
     int args_index = 0;
     
     // Remove trailing newline
@@ -82,131 +86,106 @@ struct parsed_data ** parse_input(char *input) {
 
 
     while (input != NULL) {
-        pc = malloc(sizeof(struct parsed_command));
-        current = pc;
+        if (pc == NULL) {
+            pc = malloc(sizeof(struct parsed_command));
+            current = pc;
+        } else {
+            current->next = malloc(sizeof(struct parsed_command));
+            current = current->next;
+        }
 
         command = strsep(&input, "&");
         command_args = strsep(&command, ">");
 
-        pd[command_index].redirect_file = command;
+        current->redirect_file = command;
 
         while (command_args != NULL) {
             command_arg = strsep(&command_args, " ");
-            pd[command_index].command[args_index] = command_arg;
+            current->command[args_index] = command_arg;
 
             args_index = args_index + 1;
         }
-        command_index = command_index + 1;
-            
     }
-        
-        // printf("TOKEN %s\n", token);
-        // printf("INPUT %s\n", input);
-        // printf("------------------------------------->\n");
-        
-        // printf("SUBTOKEN %s\n", subtoken);
-        // printf("TOKEN %s\n", token);
-        // printf("#####################################\n");
-    
-    
-    
-    // while (token != NULL) {
-    //     // Each iteration parses a single command.
-
-    //     // Parse input for redirection.
-    //     token = strtok_r(token, ">", &subtoken_saveptr);
-    //     *pd->redirect_file = strtok_r(NULL, ">", &subtoken_saveptr);
-    //     if (pd->redirect_file != NULL) {
-    //         pd->redirect = 1;
-    //     }
-
-    //     // Parse input into command and arguments.
-    //     pd[j]->command[i] = strtok_r(token, " ", &subtoken_saveptr);
-
-    //     while (pd[0]->command[i-1] != NULL) {
-    //         pd[0]->command[i] = strtok_r(NULL, " ", &saveptr);
-    //         i = i + 1;
-    //     }
-    // }    
+    return &pc;
 }
 
-// void process(char *command[], struct parsed_data **pd) {
+void process(char *command[], struct parsed_command **pd) {
 
-//     char pathname[PATH_LEN];
-//     strcpy(pathname, path);
+    // char pathname[PATH_LEN];
+    // strcpy(pathname, path);
 
 
-//     // Built-in exit command
-//     if (strcmp(command[0], "exit") == 0) {
-//         if (command[1] != NULL) {
-//             fprintf(stderr, "An error has occurred\n");
-//             return;
-//         } else {
-//             _exit(EXIT_SUCCESS);
-//         }
-//     }
+    // // Built-in exit command
+    // if (strcmp(pd->command[0], "exit") == 0) {
+    //     if (pd->command[1] != NULL) {
+    //         fprintf(stderr, error_message);
+    //         return;
+    //     } else {
+    //         _exit(EXIT_SUCCESS);
+    //     }
+    // }
 
-//     // Built-in cd command
-//     if (strcmp(command[0], "cd") == 0) {
-//         if (command[1] != NULL) {
-//             if (chdir(command[1]) == -1) {
-//                 fprintf(stderr, "An error has occurred\n");
-//             }
-//         } else {
-//             fprintf(stderr, "An error has occurred\n");
-//         }
-//         return;
-//     }
+    // // Built-in cd command
+    // if (strcmp(pd->command[0], "cd") == 0) {
+    //     if (pd->command[1] != NULL) {
+    //         if (chdir(pd->command[1]) == -1) {
+    //             fprintf(stderr, error_message);
+    //         }
+    //     } else {
+    //         fprintf(stderr, error_message);
+    //     }
+    //     return;
+    // }
 
-//     // Built-in path command
-//     if (strcmp(command[0], "path") == 0) {
-//         // If path is invoked with 
-//         if (command[1] == NULL) {
-//             path[0] = '\0';
-//         } else {
-//             strcpy(path, command[1]);
-//         }
-//         return;
-//     }
+    // // Built-in path command
+    // if (strcmp(pd->command[0], "path") == 0) {
+    //     // If path is invoked with 
+    //     if (pd->command[1] == NULL) {
+    //         path[0] = '\0';
+    //     } else {
+    //         strcpy(path, pd->command[1]);
+    //     }
+    //     return;
+    // }
 
-//     // Create a new process and replace it with user
-//     // requested process.
-//     int rc = fork();
+    // // Create a new process and replace it with user
+    // // requested process.
+    // int rc = fork();
 
-//     if (rc < 0) {
-//         fprintf(stderr, "Could not spawn process.");
-//     } else if (rc == 0) {
-//         // Get correct value of pathname
-//         if (path == NULL) {
-//             strcpy(pathname, command[0]);
-//         } else {
-//             if (path[strlen(path) - 1] != '/') {
-//                 strcat(pathname, "/");
-//             }
-//             strcat(pathname, command[0]);
-//         }
+    // if (rc < 0) {
+    //     fprintf(stderr, error_message);
+    // } else if (rc == 0) {
+    //     // Get correct value of pathname
+    //     if (path == NULL) {
+    //         strcpy(pathname, pd->command[0]);
+    //     } else {
+    //         if (path[strlen(path) - 1] != '/') {
+    //             strcat(pathname, "/");
+    //         }
+    //         strcat(pathname, pd->command[0]);
+    //     }
 
-//         // Before we replace the process image we 
-//         // will open the pipes for redirection support.
+    //     // Before we replace the process image we 
+    //     // will open the pipes for redirection support.
         
-//         if (pd->redirect == 1) {
-//             close(STDOUT_FILENO);
-//             close(STDERR_FILENO);
+    //     if (pd->redirect == 1) {
+    //         close(STDOUT_FILENO);
+    //         close(STDERR_FILENO);
 
-//             int stdout_fd = open(pd->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-//             int stderr_fd = open(pd->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    //         int stdout_fd = open(pd->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    //         int stderr_fd = open(pd->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
-//             if (stdout_fd < 0 || stderr_fd < 0) {
-//                 fprintf(stderr, "An error has occurred");
-//             }
-//         }
+    //         if (stdout_fd < 0 || stderr_fd < 0) {
+    //             fprintf(stderr, error_message);
+    //         }
+    //     }
 
-//         int exec_code = execv(pathname, command);
-//         if (exec_code < 0) {
-//             fprintf(stderr, "An error has occurred\n");
-//             _exit(EXIT_FAILURE);
-//         }
-//     } else {
-//         wait(NULL);
-//     }
-// }
+    //     int exec_code = execv(pathname, command);
+    //     if (exec_code < 0) {
+    //         fprintf(stderr, error_message);
+    //         _exit(EXIT_FAILURE);
+    //     }
+    // } else {
+    //     wait(NULL);
+    // }
+}
