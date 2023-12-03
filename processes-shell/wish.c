@@ -74,7 +74,7 @@ struct parsed_command **parse_input(char *input) {
 
 
     char *command, *command_args, *command_arg;
-    int args_index = 0;
+    int args_index;
     
     // Remove trailing newline
     input[strcspn(input, "\n")] = '\0';
@@ -98,6 +98,7 @@ struct parsed_command **parse_input(char *input) {
         command_args = strsep(&command, ">");
 
         current->redirect_file = command;
+        args_index = 0;
 
         while (command_args != NULL) {
             command_arg = strsep(&command_args, " ");
@@ -105,6 +106,7 @@ struct parsed_command **parse_input(char *input) {
 
             args_index = args_index + 1;
         }
+        current->command[args_index] = NULL;
     }
     return pc;
 }
@@ -121,6 +123,7 @@ void process(char *command[], struct parsed_command **pd) {
             i++;
         }
         printf("*********");
+        current = current->next;
     }
     ;
 
