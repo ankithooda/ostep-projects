@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
             if (strlen(input) > 1) {
                 pd = parse_input(input);
                 ;
-                // process(command, pd);
+                process(command, pd);
             }
         } else {
             free(input);
@@ -81,14 +81,14 @@ struct parsed_command **parse_input(char *input) {
 
     // Parse input for multiple commands with background directive.
 
-    struct parsed_command *pc;
+    struct parsed_command **pc = malloc(sizeof (struct parsed_command*));
     struct parsed_command *current;
 
 
     while (input != NULL) {
-        if (pc == NULL) {
-            pc = malloc(sizeof(struct parsed_command));
-            current = pc;
+        if (*pc == NULL) {
+            *pc = malloc(sizeof(struct parsed_command));
+            current = *pc;
         } else {
             current->next = malloc(sizeof(struct parsed_command));
             current = current->next;
@@ -106,10 +106,23 @@ struct parsed_command **parse_input(char *input) {
             args_index = args_index + 1;
         }
     }
-    return &pc;
+    return pc;
 }
 
 void process(char *command[], struct parsed_command **pd) {
+
+    struct parsed_command *current;
+    current = *pd;
+    while (current != NULL) {
+        int i = 0;
+        printf("----- \n%s\n", current->redirect_file);
+        while(current->command[i] != NULL) {
+            printf("%s\n", current->command[i]);
+            i++;
+        }
+        printf("*********");
+    }
+    ;
 
     // char pathname[PATH_LEN];
     // strcpy(pathname, path);
