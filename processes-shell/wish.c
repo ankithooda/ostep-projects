@@ -15,24 +15,42 @@
 #define PATH_LEN 100                  // Path len can be 100 chars
 
 // TODO: Dynamically allocate this.
-#define COMMANDS 101                  // Maximum 100 Commands + 1 NUL Terminator
 #define COMMAND_TOKENS 101            // Maximum 100 tokens per are supported + 1 NUL Terminator
 
 // Static variable for storing path.
 char path[PATH_LEN];
 
 // Struct representing the parsed command.
-struct parsed_command {
+struct shell_command {
     char *command[COMMAND_TOKENS];
     char *redirect_file;
-    struct parsed_command *next;
+    struct shell_command *next;
 };
 
 // Error message
 char error_message[30] = "An error has occurred\n";
 
-struct parsed_command **parse_input(char *);
-void process(char *[], struct parsed_command **);
+struct shell_command **parse_input(char *);
+void process(char *[], struct shell_command **);
+char *strtrim(char *);
+
+char *strtrim(char *s) {
+    // Trim all leaeding whitespace
+    while (s[0] == ' ' || s[0] == '\t' || s[0] == '\n') {
+        s = s + sizeof(char);
+    }
+
+    int i = 0;
+    while (s[i] != '\0') {
+        if (s[i] == ' ' || s[i] == '\t' || s[i] == '\n') {
+            s[i] = '\0';
+        } else {
+            i++;
+        }
+    }
+    return s;
+
+}
 
 int main(int argc, char *argv[]) {
 
@@ -41,7 +59,7 @@ int main(int argc, char *argv[]) {
     FILE *stream;               // File object to represent input file or stdin.
     size_t len = 0;
 
-    struct parsed_command **pd;
+    struct shell_command **pd;
     // Intialize path to the bin directory.
     strcpy(path, "/bin");
 
@@ -58,7 +76,6 @@ int main(int argc, char *argv[]) {
         if (getline(&input, &len, stream) != -1) {
             if (strlen(input) > 1) {
                 pd = parse_input(input);
-                ;
                 process(command, pd);
             }
         } else {
@@ -70,7 +87,7 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-struct parsed_command **parse_input(char *input) {
+struct shell_command **parse_input(char *input) {
 
 
     char *command, *command_args, *command_arg;
@@ -79,41 +96,52 @@ struct parsed_command **parse_input(char *input) {
     // Remove trailing newline
     input[strcspn(input, "\n")] = '\0';
 
-    // Parse input for multiple commands with background directive.
-
-    struct parsed_command **pc = malloc(sizeof (struct parsed_command*));
-    struct parsed_command *current;
+    struct shell_command **pc = malloc(sizeof (struct shell_command*));
+    struct shell_command *current;
 
 
     while (input != NULL) {
         if (*pc == NULL) {
-            *pc = malloc(sizeof(struct parsed_command));
+            *pc = malloc(sizeof(struct shell_command));
             current = *pc;
         } else {
-            current->next = malloc(sizeof(struct parsed_command));
+            current->next = malloc(sizeof(struct shell_command));
             current = current->next;
         }
 
         command = strsep(&input, "&");
         command_args = strsep(&command, ">");
+        
+        // Cleanup redirect file
 
-        current->redirect_file = command;
+        
+
+        current->redirect_file = strtrim(command);
         args_index = 0;
 
         while (command_args != NULL) {
             command_arg = strsep(&command_args, " ");
-            current->command[args_index] = command_arg;
 
-            args_index = args_index + 1;
+            // If we get a zero length string i.e first char is \0
+            // We do not add it to parsed data structure.
+            if (command_arg[args_index] != '\0') {
+                // int i = 0;
+                // while(command_arg[i] == ' ') {
+                //     command_arg = command_arg + ++i;
+                // }
+                current->command[args_index] = strtrim(command_arg);
+                args_index = args_index + 1;
+            } 
+
         }
         current->command[args_index] = NULL;
     }
     return pc;
 }
 
-void process(char *command[], struct parsed_command **pd) {
+void process(char *command[], struct shell_command **pd) {
 
-    struct parsed_command *current;
+    struct shell_command *current;
     current = *pd;
     while (current != NULL) {
         int i = 0;
