@@ -31,11 +31,14 @@ struct shell_command {
 char error_message[30] = "An error has occurred\n";
 
 struct shell_command **parse_input(char *);
-void process(char *[], struct shell_command **);
+void process(struct shell_command **);
 char *strtrim(char *);
 
 char *strtrim(char *s) {
-    // Trim all leaeding whitespace
+
+    if (s == NULL) {return NULL;}
+
+    // Trim all leading whitespace
     while (s[0] == ' ' || s[0] == '\t' || s[0] == '\n') {
         s = s + sizeof(char);
     }
@@ -55,7 +58,6 @@ char *strtrim(char *s) {
 int main(int argc, char *argv[]) {
 
     char *input;                // input buffer
-    char *command[INPUT_LEN];   // Tokenized input
     FILE *stream;               // File object to represent input file or stdin.
     size_t len = 0;
 
@@ -76,7 +78,7 @@ int main(int argc, char *argv[]) {
         if (getline(&input, &len, stream) != -1) {
             if (strlen(input) > 1) {
                 pd = parse_input(input);
-                process(command, pd);
+                process(pd);
             }
         } else {
             free(input);
@@ -124,11 +126,7 @@ struct shell_command **parse_input(char *input) {
 
             // If we get a zero length string i.e first char is \0
             // We do not add it to parsed data structure.
-            if (command_arg[args_index] != '\0') {
-                // int i = 0;
-                // while(command_arg[i] == ' ') {
-                //     command_arg = command_arg + ++i;
-                // }
+            if (command_arg[0] != '\0') {
                 current->command[args_index] = strtrim(command_arg);
                 args_index = args_index + 1;
             } 
@@ -139,97 +137,96 @@ struct shell_command **parse_input(char *input) {
     return pc;
 }
 
-void process(char *command[], struct shell_command **pd) {
+void process(struct shell_command **pd) {
 
     struct shell_command *current;
     current = *pd;
-    while (current != NULL) {
-        int i = 0;
-        printf("----- \n%s\n", current->redirect_file);
-        while(current->command[i] != NULL) {
-            printf("%s\n", current->command[i]);
-            i++;
+    // while (current != NULL) {
+    //     int i = 0;
+    //     printf("----- \n%s\n", current->redirect_file);
+    //     while(current->command[i] != NULL) {
+    //         printf("%s\n", current->command[i]);
+    //         i++;
+    //     }
+    //     printf("*********");
+    //     current = current->next;
+    // }
+    
+
+    char pathname[PATH_LEN];
+    strcpy(pathname, path);
+
+    // Built-in exit command
+    if (strcmp(current->command[0], "exit") == 0) {
+        if (current->command[1] != NULL) {
+            fprintf(stderr, "%s", error_message);
+            return;
+        } else {
+            _exit(EXIT_SUCCESS);
         }
-        printf("*********");
-        current = current->next;
     }
-    ;
 
-    // char pathname[PATH_LEN];
-    // strcpy(pathname, path);
+    // Built-in cd command
+    if (strcmp(current->command[0], "cd") == 0) {
+        if (current->command[1] != NULL) {
+            if (chdir(current->command[1]) == -1) {
+                fprintf(stderr, "%s", error_message);
+            }
+        } else {
+            fprintf(stderr, "%s", error_message);
+        }
+        return;
+    }
 
+    // Built-in path command
+    if (strcmp(current->command[0], "path") == 0) {
+        // If path is invoked with 
+        if (current->command[1] == NULL) {
+            path[0] = '\0';
+        } else {
+            strcpy(path, current->command[1]);
+        }
+        return;
+    }
 
-    // // Built-in exit command
-    // if (strcmp(pd->command[0], "exit") == 0) {
-    //     if (pd->command[1] != NULL) {
-    //         fprintf(stderr, error_message);
-    //         return;
-    //     } else {
-    //         _exit(EXIT_SUCCESS);
-    //     }
-    // }
+    // Create a new process and replace it with user
+    // requested process.
+    int rc = fork();
 
-    // // Built-in cd command
-    // if (strcmp(pd->command[0], "cd") == 0) {
-    //     if (pd->command[1] != NULL) {
-    //         if (chdir(pd->command[1]) == -1) {
-    //             fprintf(stderr, error_message);
-    //         }
-    //     } else {
-    //         fprintf(stderr, error_message);
-    //     }
-    //     return;
-    // }
+    if (rc < 0) {
+        fprintf(stderr, "%s", error_message);
+    } else if (rc == 0) {
+        // Get correct value of pathname
+        if (path == NULL) {
+            strcpy(pathname, current->command[0]);
+        } else {
+            if (path[strlen(path) - 1] != '/') {
+                strcat(pathname, "/");
+            }
+            strcat(pathname, current->command[0]);
+        }
 
-    // // Built-in path command
-    // if (strcmp(pd->command[0], "path") == 0) {
-    //     // If path is invoked with 
-    //     if (pd->command[1] == NULL) {
-    //         path[0] = '\0';
-    //     } else {
-    //         strcpy(path, pd->command[1]);
-    //     }
-    //     return;
-    // }
-
-    // // Create a new process and replace it with user
-    // // requested process.
-    // int rc = fork();
-
-    // if (rc < 0) {
-    //     fprintf(stderr, error_message);
-    // } else if (rc == 0) {
-    //     // Get correct value of pathname
-    //     if (path == NULL) {
-    //         strcpy(pathname, pd->command[0]);
-    //     } else {
-    //         if (path[strlen(path) - 1] != '/') {
-    //             strcat(pathname, "/");
-    //         }
-    //         strcat(pathname, pd->command[0]);
-    //     }
-
-    //     // Before we replace the process image we 
-    //     // will open the pipes for redirection support.
+        // Before we replace the process image we 
+        // will open the pipes for redirection support.
         
-    //     if (pd->redirect == 1) {
-    //         close(STDOUT_FILENO);
-    //         close(STDERR_FILENO);
+        if (current->redirect_file != NULL) {
+            close(STDOUT_FILENO);
+            close(STDERR_FILENO);
 
-    //         int stdout_fd = open(pd->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-    //         int stderr_fd = open(pd->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+            int stdout_fd = open(current->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+            int stderr_fd = open(current->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
-    //         if (stdout_fd < 0 || stderr_fd < 0) {
-    //             fprintf(stderr, error_message);
-    //         }
-    //     }
+            if (stdout_fd < 0 || stderr_fd < 0) {
+                fprintf(stderr, "%s", error_message);
+            }
+        }
 
-    //     int exec_code = execv(pathname, command);
-    //     if (exec_code < 0) {
-    //         fprintf(stderr, error_message);
-    //         _exit(EXIT_FAILURE);
-    //     }
-    // } else {
-    //     wait(NULL);
-    // }
+        int exec_code = execv(pathname, current->command);
+        if (exec_code < 0) {
+            fprintf(stderr, "%s", error_message);
+            _exit(EXIT_FAILURE);
+        }
+    } else {
+        wait(NULL);
+    }
 }
