@@ -1,6 +1,7 @@
 #define _GNU_SOURCE 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <string.h>
 #include <limits.h>
@@ -18,12 +19,13 @@
 #define COMMAND_TOKENS 101            // Maximum 100 tokens per are supported + 1 NUL Terminator
 
 // Static variable for storing path.
-char path[PATH_LEN];
+char shellpath[PATH_LEN];
 
 // Struct representing the parsed command.
 struct shell_command {
     char *command[COMMAND_TOKENS];
     char *redirect_file;
+    bool redirect;
     struct shell_command *next;
 };
 
@@ -63,7 +65,7 @@ int main(int argc, char *argv[]) {
 
     struct shell_command **pd;
     // Intialize path to the bin directory.
-    strcpy(path, "/bin");
+    strcpy(shellpath, "/bin/");
 
     // Set appropriate value for the input stream.
     if (argc == 2) {
@@ -113,11 +115,7 @@ struct shell_command **parse_input(char *input) {
 
         command = strsep(&input, "&");
         command_args = strsep(&command, ">");
-        
-        // Cleanup redirect file
-
-        
-
+    
         current->redirect_file = strtrim(command);
         args_index = 0;
 
@@ -153,8 +151,7 @@ void process(struct shell_command **pd) {
     // }
     
 
-    char pathname[PATH_LEN];
-    strcpy(pathname, path);
+    char process_binary[PATH_LEN];
 
     // Built-in exit command
     if (strcmp(current->command[0], "exit") == 0) {
@@ -182,9 +179,12 @@ void process(struct shell_command **pd) {
     if (strcmp(current->command[0], "path") == 0) {
         // If path is invoked with 
         if (current->command[1] == NULL) {
-            path[0] = '\0';
+            shellpath[0] = '\0';
         } else {
-            strcpy(path, current->command[1]);
+            strcpy(shellpath, current->command[1]);
+            if (shellpath[strlen(shellpath) - 1] != '/') {
+                strcat(shellpath, "/");
+            }
         }
         return;
     }
@@ -197,13 +197,11 @@ void process(struct shell_command **pd) {
         fprintf(stderr, "%s", error_message);
     } else if (rc == 0) {
         // Get correct value of pathname
-        if (path == NULL) {
-            strcpy(pathname, current->command[0]);
+        if (shellpath == NULL) {
+            strcpy(process_binary, current->command[0]);
         } else {
-            if (path[strlen(path) - 1] != '/') {
-                strcat(pathname, "/");
-            }
-            strcat(pathname, current->command[0]);
+            strcpy(process_binary, shellpath);
+            strcat(process_binary, current->command[0]);
         }
 
         // Before we replace the process image we 
@@ -221,7 +219,7 @@ void process(struct shell_command **pd) {
             }
         }
 
-        int exec_code = execv(pathname, current->command);
+        int exec_code = execv(process_binary, current->command);
         if (exec_code < 0) {
             fprintf(stderr, "%s", error_message);
             _exit(EXIT_FAILURE);
