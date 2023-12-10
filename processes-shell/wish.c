@@ -46,12 +46,21 @@ char *strtrim(char *s) {
     }
 
     int i = 0;
+    int end = -1;
+
+    // End stores the location of last whitespace char.
     while (s[i] != '\0') {
         if (s[i] == ' ' || s[i] == '\t' || s[i] == '\n') {
-            s[i] = '\0';
+            end = i;
         } else {
-            i++;
+            end = -1;
         }
+        i++;
+    }
+
+    // Terminate string at the last whitespace char.
+    if (end != -1) {
+        s[end] = '\0';
     }
     return s;
 
@@ -68,10 +77,17 @@ int main(int argc, char *argv[]) {
     strcpy(shellpath, "/bin/");
 
     // Set appropriate value for the input stream.
-    if (argc == 2) {
-        stream = fopen(argv[1], "r+");
-    } else {
+    if (argc == 1) {
         stream = stdin;
+    } else if (argc == 2) {
+        stream = fopen(argv[1], "r+");
+        if (stream == NULL) {
+            fprintf(stderr, "%s", error_message);
+            exit(EXIT_FAILURE);            
+        }
+    } else {
+        fprintf(stderr, "%s", error_message);
+        exit(EXIT_FAILURE);
     }
     while (1) {
         // Print prompt only in interactive mode.
@@ -115,8 +131,22 @@ struct shell_command **parse_input(char *input) {
 
         command = strsep(&input, "&");
         command_args = strsep(&command, ">");
-    
-        current->redirect_file = strtrim(command);
+
+
+        // Trim leading and trailing whitespaces.
+        command = strtrim(command);
+
+        // Get redirect file name
+        current->redirect_file = strsep(&command, " ");
+
+        // Command now contains the second redirect_file
+        if (command != NULL && command[0] != '\0') {
+            fprintf(stderr, "%s", error_message);
+
+            // TODO: Fix this abomination.
+            exit(EXIT_SUCCESS);
+        }
+
         args_index = 0;
 
         while (command_args != NULL) {
@@ -139,19 +169,13 @@ void process(struct shell_command **pd) {
 
     struct shell_command *current;
     current = *pd;
-    // while (current != NULL) {
-    //     int i = 0;
-    //     printf("----- \n%s\n", current->redirect_file);
-    //     while(current->command[i] != NULL) {
-    //         printf("%s\n", current->command[i]);
-    //         i++;
-    //     }
-    //     printf("*********");
-    //     current = current->next;
-    // }
-    
-
     char process_binary[PATH_LEN];
+
+    if (current->command[0] == NULL) {
+        fprintf(stderr, "%s", error_message);
+        return;
+    }
+
 
     // Built-in exit command
     if (strcmp(current->command[0], "exit") == 0) {
@@ -208,12 +232,25 @@ void process(struct shell_command **pd) {
         // will open the pipes for redirection support.
         
         if (current->redirect_file != NULL) {
+
+            // If redirect file name is empty
+            // print error and exit the child process.
+            if (current->redirect_file[0] == '\0') {
+                fprintf(stderr, "%s", error_message);
+                _exit(EXIT_FAILURE);
+            }
+
+            // Close STDOUT and STDERR
             close(STDOUT_FILENO);
             close(STDERR_FILENO);
 
+            // TODO: find a better a way to handle
+            // errors when opening redirect file.
             int stdout_fd = open(current->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
             int stderr_fd = open(current->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
+            // This message get never printed as STDOUT and STDERR are closed
+            // for the child process.
             if (stdout_fd < 0 || stderr_fd < 0) {
                 fprintf(stderr, "%s", error_message);
             }
