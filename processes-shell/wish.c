@@ -25,7 +25,7 @@ char shellpath[PATH_LEN];
 struct shell_command {
     char *command[COMMAND_TOKENS];
     char *redirect_file;
-    bool redirect;
+    bool background;
     struct shell_command *next;
 };
 
@@ -129,9 +129,11 @@ struct shell_command **parse_input(char *input) {
             current = current->next;
         }
 
+        if (strchr(input, '&') != NULL) {
+            current->background = true;
+        }
         command = strsep(&input, "&");
         command_args = strsep(&command, ">");
-
 
         // Trim leading and trailing whitespaces.
         command = strtrim(command);
@@ -171,97 +173,106 @@ void process(struct shell_command **pd) {
     current = *pd;
     char process_binary[PATH_LEN];
 
-    if (current->command[0] == NULL) {
-        fprintf(stderr, "%s", error_message);
-        return;
-    }
-
-
-    // Built-in exit command
-    if (strcmp(current->command[0], "exit") == 0) {
-        if (current->command[1] != NULL) {
-            fprintf(stderr, "%s", error_message);
-            return;
-        } else {
-            _exit(EXIT_SUCCESS);
-        }
-    }
-
-    // Built-in cd command
-    if (strcmp(current->command[0], "cd") == 0) {
-        if (current->command[1] != NULL) {
-            if (chdir(current->command[1]) == -1) {
+    while (current != NULL) {
+        // Return if no command is passed.
+        if (current->command[0] == NULL) {
+            // Print error message if there was a redirect file.
+            if (current->redirect_file != NULL) {
                 fprintf(stderr, "%s", error_message);
             }
-        } else {
-            fprintf(stderr, "%s", error_message);
+            return;
         }
-        return;
-    }
 
-    // Built-in path command
-    if (strcmp(current->command[0], "path") == 0) {
-        // If path is invoked with 
-        if (current->command[1] == NULL) {
-            shellpath[0] = '\0';
-        } else {
-            strcpy(shellpath, current->command[1]);
-            if (shellpath[strlen(shellpath) - 1] != '/') {
-                strcat(shellpath, "/");
+
+        // Built-in exit command
+        if (strcmp(current->command[0], "exit") == 0) {
+            if (current->command[1] != NULL) {
+                fprintf(stderr, "%s", error_message);
+                return;
+            } else {
+                _exit(EXIT_SUCCESS);
             }
         }
-        return;
-    }
 
-    // Create a new process and replace it with user
-    // requested process.
-    int rc = fork();
-
-    if (rc < 0) {
-        fprintf(stderr, "%s", error_message);
-    } else if (rc == 0) {
-        // Get correct value of pathname
-        if (shellpath == NULL) {
-            strcpy(process_binary, current->command[0]);
-        } else {
-            strcpy(process_binary, shellpath);
-            strcat(process_binary, current->command[0]);
+        // Built-in cd command
+        if (strcmp(current->command[0], "cd") == 0) {
+            if (current->command[1] != NULL) {
+                if (chdir(current->command[1]) == -1) {
+                    fprintf(stderr, "%s", error_message);
+                }
+            } else {
+                fprintf(stderr, "%s", error_message);
+            }
+            return;
         }
 
-        // Before we replace the process image we 
-        // will open the pipes for redirection support.
-        
-        if (current->redirect_file != NULL) {
+        // Built-in path command
+        if (strcmp(current->command[0], "path") == 0) {
+            // If path is invoked with 
+            if (current->command[1] == NULL) {
+                shellpath[0] = '\0';
+            } else {
+                strcpy(shellpath, current->command[1]);
+                if (shellpath[strlen(shellpath) - 1] != '/') {
+                    strcat(shellpath, "/");
+                }
+            }
+            return;
+        }
 
-            // If redirect file name is empty
-            // print error and exit the child process.
-            if (current->redirect_file[0] == '\0') {
+        // Create a new process and replace it with user
+        // requested process.
+        int rc = fork();
+
+        if (rc < 0) {
+            fprintf(stderr, "%s", error_message);
+        } else if (rc == 0) {
+            // Get correct value of pathname
+            if (shellpath == NULL) {
+                strcpy(process_binary, current->command[0]);
+            } else {
+                strcpy(process_binary, shellpath);
+                strcat(process_binary, current->command[0]);
+            }
+
+            // Before we replace the process image we 
+            // will open the pipes for redirection support.
+            
+            if (current->redirect_file != NULL) {
+
+                // If redirect file name is empty
+                // print error and exit the child process.
+                if (current->redirect_file[0] == '\0') {
+                    fprintf(stderr, "%s", error_message);
+                    _exit(EXIT_FAILURE);
+                }
+
+                // Close STDOUT and STDERR
+                close(STDOUT_FILENO);
+                close(STDERR_FILENO);
+
+                // TODO: find a better a way to handle
+                // errors when opening redirect file.
+                int stdout_fd = open(current->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+                int stderr_fd = open(current->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+
+                // This message get never printed as STDOUT and STDERR are closed
+                // for the child process.
+                if (stdout_fd < 0 || stderr_fd < 0) {
+                    fprintf(stderr, "%s", error_message);
+                }
+            }
+
+            int exec_code = execv(process_binary, current->command);
+            if (exec_code < 0) {
                 fprintf(stderr, "%s", error_message);
                 _exit(EXIT_FAILURE);
             }
-
-            // Close STDOUT and STDERR
-            close(STDOUT_FILENO);
-            close(STDERR_FILENO);
-
-            // TODO: find a better a way to handle
-            // errors when opening redirect file.
-            int stdout_fd = open(current->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-            int stderr_fd = open(current->redirect_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-
-            // This message get never printed as STDOUT and STDERR are closed
-            // for the child process.
-            if (stdout_fd < 0 || stderr_fd < 0) {
-                fprintf(stderr, "%s", error_message);
+        } else {
+            if (current->background != true) {
+                waitpid(rc, NULL, 0);
             }
         }
-
-        int exec_code = execv(process_binary, current->command);
-        if (exec_code < 0) {
-            fprintf(stderr, "%s", error_message);
-            _exit(EXIT_FAILURE);
-        }
-    } else {
-        wait(NULL);
+        current = current->next;
     }
 }
