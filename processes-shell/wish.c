@@ -19,7 +19,7 @@
 #define COMMAND_TOKENS 101            // Maximum 100 tokens per are supported + 1 NUL Terminator
 
 // Static variable for storing path.
-char shellpath[PATH_LEN];
+char *shellpaths[PATH_LEN];
 
 // Struct representing the parsed command.
 struct shell_command {
@@ -73,8 +73,9 @@ int main(int argc, char *argv[]) {
     size_t len = 0;
 
     struct shell_command **pd;
-    // Intialize path to the bin directory.
-    strcpy(shellpath, "/bin/");
+    // Intialize shellpaths to the bin directory.
+    shellpaths[0] = "/bin/";
+    shellpaths[1] = NULL;
 
     // Set appropriate value for the input stream.
     if (argc == 1) {
@@ -171,7 +172,7 @@ void process(struct shell_command **pd) {
 
     struct shell_command *current;
     current = *pd;
-    char process_binary[PATH_LEN];
+    char *process_binary;
 
     while (current != NULL) {
         // Return if no command is passed.
@@ -210,12 +211,21 @@ void process(struct shell_command **pd) {
         if (strcmp(current->command[0], "path") == 0) {
             // If path is invoked with 
             if (current->command[1] == NULL) {
-                shellpath[0] = '\0';
+                shellpaths[0] = NULL;
             } else {
-                strcpy(shellpath, current->command[1]);
-                if (shellpath[strlen(shellpath) - 1] != '/') {
-                    strcat(shellpath, "/");
+                int i = 1;
+                while (current->command[i] != NULL) {
+                    strcpy(shellpaths[i-1], current->command[i]);
+
+                    // Attach trailing slash
+                    int len = strlen(shellpaths[i-1]);
+                    if (shellpaths[i-1][len-1] != '/') {
+                        strcat(shellpaths[i-1], "/");
+                    }
+                    i++;
+
                 }
+                shellpaths[i-1] = NULL;
             }
             return;
         }
@@ -228,11 +238,32 @@ void process(struct shell_command **pd) {
             fprintf(stderr, "%s", error_message);
         } else if (rc == 0) {
             // Get correct value of pathname
-            if (shellpath == NULL) {
+            // by trying out all shellpaths.
+
+            // If not shellpaths are available 
+            // simply copy the user supplied command name
+            if (shellpaths[0] == NULL) {
                 strcpy(process_binary, current->command[0]);
             } else {
-                strcpy(process_binary, shellpath);
-                strcat(process_binary, current->command[0]);
+                // Iterate over all available shellpaths
+                // and use the first X_OK path
+                int path_index = 0;
+                while(shellpaths[path_index] != NULL) {
+                    strcpy(process_binary, shellpaths[path_index]);
+                    strcat(process_binary, current->command[0]);
+                    if (access(process_binary, X_OK) == 0) {
+                        break;
+                    } else {
+                        free(process_binary);
+                        process_binary = NULL;
+                    }
+                }
+            }
+
+            // Exit if no valid process binary found.
+            if (process_binary == NULL) {
+                fprintf(stderr, "%s", error_message);
+                _exit(EXIT_FAILURE);
             }
 
             // Before we replace the process image we 
