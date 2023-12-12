@@ -12,18 +12,17 @@
 
 
 // TODO: Revise this arbitrary limits.
-#define INPUT_LEN 10000               // Maximum input by user can be 10000 chars
-#define PATH_LEN 100                  // Path len can be 100 chars
+#define MAX_SHELLPATHS 101            // Maximum 100 Shell paths + 1 NUL Terminator
 
 // TODO: Dynamically allocate this.
-#define COMMAND_TOKENS 101            // Maximum 100 tokens per are supported + 1 NUL Terminator
+#define MAX_COMMAND_TOKENS 101            // Maximum 100 tokens per are supported + 1 NUL Terminator
 
 // Static variable for storing path.
-char *shellpaths[PATH_LEN];
+char *shellpaths[MAX_SHELLPATHS];
 
 // Struct representing the parsed command.
 struct shell_command {
-    char *command[COMMAND_TOKENS];
+    char *command[MAX_COMMAND_TOKENS];
     char *redirect_file;
     bool background;
     struct shell_command *next;
@@ -73,8 +72,10 @@ int main(int argc, char *argv[]) {
     size_t len = 0;
 
     struct shell_command **pd;
-    // Intialize shellpaths to the bin directory.
-    shellpaths[0] = "/bin/";
+    // Intialize shellpath to the bin directory.
+    char *initial_shellpath = malloc(6);
+    strcpy(initial_shellpath, "/bin/");
+    shellpaths[0] = initial_shellpath;
     shellpaths[1] = NULL;
 
     // Set appropriate value for the input stream.
@@ -101,6 +102,7 @@ int main(int argc, char *argv[]) {
             }
         } else {
             free(input);
+            fclose(stream);
             exit(EXIT_SUCCESS);
         }
     }
@@ -170,7 +172,7 @@ struct shell_command **parse_input(char *input) {
 
 void process(struct shell_command **pd) {
 
-    struct shell_command *current;
+    struct shell_command *current, *temp;
     current = *pd;
     char process_binary[100];
 
@@ -209,13 +211,23 @@ void process(struct shell_command **pd) {
 
         // Built-in path command
         if (strcmp(current->command[0], "path") == 0) {
-            // If path is invoked with 
+            // Whenever path is invoked we free the memory of all previous shellpaths.
+            int i = 0;
+            while(shellpaths[i] != NULL) {
+                free(shellpaths[i]);
+                i++;
+            }
+
+
+            // If path is invoked with no arguments.
             if (current->command[1] == NULL) {
                 shellpaths[0] = NULL;
             } else {
-                int i = 1;
+                i = 1;
                 while (current->command[i] != NULL) {
-                    shellpaths[i-1] = malloc(strlen(current->command[i]) * sizeof(char));
+                    // We allocate the memory for storing shellpath
+                    // + the terminating byte + 1 for trailing slash if required.
+                    shellpaths[i-1] = malloc(strlen(current->command[i]) + 2);
                     strcpy(shellpaths[i-1], current->command[i]);
 
                     // Attach trailing slash
@@ -305,6 +317,8 @@ void process(struct shell_command **pd) {
                 waitpid(rc, NULL, 0);
             }
         }
+        temp = current;
         current = current->next;
+        free(temp);
     }
 }
