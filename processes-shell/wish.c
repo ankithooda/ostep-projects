@@ -10,11 +10,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+// TODO: Clean up memory leaks
 
-// TODO: Revise this arbitrary limits.
 #define MAX_SHELLPATHS 101            // Maximum 100 Shell paths + 1 NUL Terminator
 
-// TODO: Dynamically allocate this.
 #define MAX_COMMAND_TOKENS 101            // Maximum 100 tokens per are supported + 1 NUL Terminator
 
 // Static variable for storing path.
@@ -106,7 +105,6 @@ int main(int argc, char *argv[]) {
             exit(EXIT_SUCCESS);
         }
     }
-    // TODO: Handle SIGINT to free memory.
     return 0;
 }
 
@@ -214,9 +212,10 @@ void process(struct shell_command **pd) {
             // Whenever path is invoked we free the memory of all previous shellpaths.
             int i = 0;
             while(shellpaths[i] != NULL) {
-                free(shellpaths[i]);
+                // free(shellpaths[i]);
                 i++;
             }
+            i = 0;
 
 
             // If path is invoked with no arguments.
