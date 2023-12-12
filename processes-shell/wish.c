@@ -172,7 +172,7 @@ void process(struct shell_command **pd) {
 
     struct shell_command *current;
     current = *pd;
-    char *process_binary;
+    char process_binary[100];
 
     while (current != NULL) {
         // Return if no command is passed.
@@ -215,6 +215,7 @@ void process(struct shell_command **pd) {
             } else {
                 int i = 1;
                 while (current->command[i] != NULL) {
+                    shellpaths[i-1] = malloc(strlen(current->command[i]) * sizeof(char));
                     strcpy(shellpaths[i-1], current->command[i]);
 
                     // Attach trailing slash
@@ -254,9 +255,9 @@ void process(struct shell_command **pd) {
                     if (access(process_binary, X_OK) == 0) {
                         break;
                     } else {
-                        free(process_binary);
-                        process_binary = NULL;
+                        process_binary[0] = '\0';
                     }
+                    path_index++;
                 }
             }
 
