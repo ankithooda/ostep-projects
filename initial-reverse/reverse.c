@@ -14,7 +14,6 @@ int main(int argc, char **argv) {
 
   FILE *input, *output;
   char **lines = NULL;            // Allocate a buffer for storing pointers to the lines.
-  char **temp_buffer;
   size_t line_len;
   size_t line_num = 0;
   size_t buffer_len = INITIAL_BUFFER_LEN;
@@ -64,26 +63,27 @@ int main(int argc, char **argv) {
     // If we have more lines than the current buffer_len
     // we double the buffer size;
     if (line_num >= buffer_len) {
-      temp_buffer = lines;
-      lines = reallocarray(lines, buffer_len * 2, sizeof(char *));
+      buffer_len = buffer_len * 2;
+      lines = reallocarray(lines, buffer_len, sizeof(char *));
       if (lines == NULL) {
         fprintf(stderr, "%s\n", malloc_failed_message);
         exit(EXIT_FAILURE);
       }
-      memcpy(lines, temp_buffer, buffer_len * sizeof(char *));
-
-      buffer_len = buffer_len * 2;
-      free(temp_buffer);
     }
   }
 
   // Write the lines stored in the buffer
   // to the output file in reverse order.
-  while (line_num >= 0) {
-    fprintf(output, "%s", lines[line_num]);
-    line_num--;
-  }
 
+  // Exit if there were no lines.
+  if (line_num == 0) {
+    exit(EXIT_SUCCESS);
+  }
+  do {
+    line_num--;
+    fprintf(output, "%s", lines[line_num]);
+  }
+  while (line_num != 0);
 
   fclose(input);
   fclose(output);
