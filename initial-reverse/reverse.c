@@ -35,19 +35,28 @@ int main(int argc, char **argv) {
     // Before we open the input and output file
     // we will check if they are both the same file.
 
-    struct stat *input_stat, *output_stat;
-    input_stat = NULL;
-    output_stat = NULL;
+    struct stat input_stat, output_stat;
 
-    if (stat(argv[1], input_stat) == -1) {
+    // If we are not able to stat input file,
+    // we will print error message and exit.
+    if (stat(argv[1], &input_stat) == -1) {
       fprintf(stderr, file_error_template, argv[1]);
       exit(EXIT_FAILURE);
     }
-    if (stat(argv[2], output_stat) == -1) {
-      //fprintf(stderr, file_error_template, argv[2]);
-      //exit(EXIT_FAILURE);
+
+    // We do not care about stat on output file
+    // as it might no exist.
+    stat(argv[2], &output_stat);
+
+    // Check if inode number of both files is same.
+    // Inode number is a robust way of checking two files
+    // are same (soft links, hard links, same name)
+    if (input_stat.st_ino == output_stat.st_ino) {
+      fprintf(stderr, "%s\n", file_same_error_message);
+      exit(EXIT_FAILURE);
     }
 
+    // Open files
     input = fopen(argv[1], "r");
     output = fopen(argv[2], "w");
 
