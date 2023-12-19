@@ -79,6 +79,7 @@ int main(int argc, char **argv) {
   lines = reallocarray(lines, buffer_len, sizeof(char *));
   if (lines == NULL) {
     fprintf(stderr, "%s\n", malloc_failed_message);
+    free(lines);                 // When reallocarray fails it does no free old memory.
     exit(EXIT_FAILURE);
   }
   // Getline from the input
@@ -92,6 +93,7 @@ int main(int argc, char **argv) {
       lines = reallocarray(lines, buffer_len, sizeof(char *));
       if (lines == NULL) {
         fprintf(stderr, "%s\n", malloc_failed_message);
+        free(lines);              // When reallocarray fails it does no free old memory.
         exit(EXIT_FAILURE);
       }
     }
