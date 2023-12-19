@@ -16,7 +16,7 @@ char *malloc_failed_message = "malloc failed";
 int main(int argc, char **argv) {
 
   FILE *input, *output;
-  char **lines = NULL;            // Allocate a buffer for storing pointers to the lines.
+  char **lines = NULL;
   size_t line_len;
   size_t line_num = 0;
   size_t buffer_len = INITIAL_BUFFER_LEN;
@@ -77,7 +77,10 @@ int main(int argc, char **argv) {
 
   // Allocate initial buffer
   lines = reallocarray(lines, buffer_len, sizeof(char *));
-
+  if (lines == NULL) {
+    fprintf(stderr, "%s\n", malloc_failed_message);
+    exit(EXIT_FAILURE);
+  }
   // Getline from the input
   // store the pointers to each line in a buffer.
   while ((line_num < buffer_len) && (getline(&lines[line_num], &line_len, input) != -1)) {
@@ -94,20 +97,26 @@ int main(int argc, char **argv) {
     }
   }
 
-  // Write the lines stored in the buffer
-  // to the output file in reverse order.
-
   // Exit if there were no lines.
   if (line_num == 0) {
     exit(EXIT_SUCCESS);
   }
+
+  // Write the lines stored in the buffer
+  // to the output file in reverse order.
   do {
     line_num--;
     fprintf(output, "%s", lines[line_num]);
+
+    // Call free after each line is printed out.
+    free(lines[line_num]);
   }
   while (line_num != 0);
 
+  // Finally free the memory and close open files.
+  free(lines);
   fclose(input);
   fclose(output);
+
   exit(EXIT_SUCCESS);
 }
