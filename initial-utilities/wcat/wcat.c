@@ -30,14 +30,14 @@ int main(int argc, char **argv) {
 
   while (feof(input) == 0) {
 
-    read_count = fread(buffer, sizeof(char *), buflen, input);
+    read_count = fread(buffer, sizeof(char), buflen, input);
 
     if (ferror(input) != 0) {
       fprintf(stderr, "%s\n", file_read_error);
       exit(EXIT_FAILURE);
     }
 
-    write_count = fwrite(buffer, sizeof(char *), read_count, output);
+    write_count = fwrite(buffer, sizeof(char), read_count, output);
 
     if (ferror(output) != 0 || write_count != read_count) {
       fprintf(stderr, "%s\n", file_write_error);
