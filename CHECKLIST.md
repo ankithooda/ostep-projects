@@ -1,11 +1,11 @@
 Warmup
 
-- [x] processes-shell
 - [x] initial-utilities/wcat
-- [ ] initial-utilities/wgrep
+- [x] initial-utilities/wgrep
 - [ ] initial-utilities/wunzip
 - [ ] initial-utilities/wzip
 - [x] initial-reverse
+- [x] processes-shell
 - [ ] initial-kv
 - [ ] initial-memcached
 
