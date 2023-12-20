@@ -58,9 +58,13 @@ void search(char *search_term, FILE *input) {
     if (match) {
       fprintf(stdout, "%s", line);
     }
+    // line will contain the address after free is called.
+    // resulting in double free
+    // also if line is not null, getline will use that same buffer.
     free(line);
     line = NULL;
   }
-  // Free the last line.
+  // Free the buffer allocated for the last line by the getline
+  // because we did not enter the while loop for that line.
   free(line);
 }
