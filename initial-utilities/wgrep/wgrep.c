@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
   FILE *input = NULL;
 
   if (argc <= 1) {
-    fprintf(stderr, "%s\n", usage_message);
+    fprintf(stdout, "%s\n", usage_message);
     exit(EXIT_FAILURE);
   } else if (argc == 2) {
     search(argv[1], stdin);
@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
       input = fopen(argv[i], "r");
 
       if (input == NULL) {
-        fprintf(stderr, "%s\n", file_error_message);
+        fprintf(stdout, "%s\n", file_error_message);
         exit(EXIT_FAILURE);
       }
 
@@ -58,6 +58,6 @@ void search(char *search_term, FILE *input) {
     if (match) {
       fprintf(stdout, "%s", line);
     }
-    free(line);
+    //free(line);
   }
 }
