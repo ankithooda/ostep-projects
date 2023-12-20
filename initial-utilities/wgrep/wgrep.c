@@ -58,6 +58,9 @@ void search(char *search_term, FILE *input) {
     if (match) {
       fprintf(stdout, "%s", line);
     }
-    //free(line);
+    free(line);
+    line = NULL;
   }
+  // Free the last line.
+  free(line);
 }
