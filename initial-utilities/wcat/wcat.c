@@ -41,6 +41,7 @@ int main(int argc, char **argv) {
           exit(EXIT_FAILURE);
         }
       }
+      fclose(input);
     }
   }
   exit(EXIT_SUCCESS);
