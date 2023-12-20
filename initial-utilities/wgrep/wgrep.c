@@ -1,5 +1,7 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 char *usage_message = "wgrep: searchterm [file ...]";
 char *file_error_message = "wgrep: cannot open file";
@@ -33,5 +35,29 @@ int main(int argc, char **argv) {
 }
 
 void search(char *search_term, FILE *input) {
-  ;
+  char *line = NULL;
+  size_t len = 0, text_i, search_i;
+  bool match = false;
+
+  while (getline(&line, &len, input) != -1) {
+
+    text_i = 0;
+    search_i = 0;
+    match = false;
+    while(line[text_i] != '\0' && search_term[search_i] != '\0') {
+
+      if (line[text_i] == search_term[search_i]) {
+        match = true;
+        search_i++;
+      } else {
+        match = false;
+        search_i = 0;
+      }
+      text_i++;
+    }
+    if (match) {
+      fprintf(stdout, "%s", line);
+    }
+    free(line);
+  }
 }
