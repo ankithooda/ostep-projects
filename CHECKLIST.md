@@ -1,7 +1,7 @@
 Warmup
 
 - [x] processes-shell
-- [ ] initial-utilities/wcat
+- [x] initial-utilities/wcat
 - [ ] initial-utilities/wgrep
 - [ ] initial-utilities/wunzip
 - [ ] initial-utilities/wzip
