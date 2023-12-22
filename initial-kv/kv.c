@@ -37,30 +37,34 @@ int main(int argc, char **argv) {
 
 struct command *parse_command(char* input) {
   struct command *c;
-  char *type;
+  char *type_token, *key_token;
 
   c = malloc(sizeof(struct command));
 
-  type = strsep(&input, ",");
-  c->key = atoi(strsep(&input, ","));
+  type_token = strsep(&input, ",");
+  key_token = strsep(&input, ",");
   c->value = strsep(&input, ",");
 
   // Validate type
-  if (type != NULL && (type[0] == GET || type[0] == PUT || type[0] == DEL || type[0] == CLR || type[0] == ALL)) {
-    c->type = type[0];
+  if (type_token != NULL && (type_token[0] == GET || type_token[0] == PUT || type_token[0] == DEL || type_token[0] == CLR || type_token[0] == ALL)) {
+    c->type = type_token[0];
   } else {
     fprintf(stdout, "%s\n", bad_command);
     exit(EXIT_FAILURE);
   }
 
   // Validate key for PUT, GET, DEL
-  if ((c->type == GET || c->type == PUT || c->type == DEL) && c->key == NULL) {
-    fprintf(stdout, "%s\n", bad_command);
-    exit(EXIT_FAILURE);
+  if (c->type == GET || c->type == PUT || c->type == DEL) {
+    if (key_token == NULL) {
+      fprintf(stdout, "%s\n", bad_command);
+      exit(EXIT_FAILURE);
+    } else {
+      c->key = atoi(key_token);
+    }
   }
 
   // Validate value for PUT
-  if (c->type == PUT && c->value == NULL) {
+  if ((c->type == GET ||  c->type == PUT || c->type == DEL) && c->value == NULL) {
     fprintf(stdout, "%s\n", bad_command);
     exit(EXIT_FAILURE);
   }
