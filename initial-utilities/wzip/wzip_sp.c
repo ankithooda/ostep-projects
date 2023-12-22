@@ -10,28 +10,16 @@ struct datum {
   char c;
 };
 
-void compress(FILE *input, struct datum *counter);
+void compress(FILE *input);
 
 int main(int argc, char **argv) {
 
   FILE *input = NULL;
-  struct datum *counter;
 
   if (argc == 1) {
-    fprintf(stdout, "%s\n", usage_message);
+    fprintf(stderr, "%s\n", usage_message);
     exit(EXIT_FAILURE);
   } else {
-
-    // Allocate memory for counter.
-    counter = malloc(sizeof (struct datum));
-
-    if (counter == NULL) {
-      fprintf(stderr, "%s\n", "wzip: malloc failed");
-      exit(EXIT_FAILURE);
-    }
-
-    counter->n = 0;
-    counter->c = '\0';
 
     for (int i = 1; i < argc; i++) {
       input = fopen(argv[i], "r");
@@ -40,22 +28,22 @@ int main(int argc, char **argv) {
         fprintf(stderr, "%s\n", file_open_err_message);
         exit(EXIT_FAILURE);
       }
-      compress(input, counter);
+      compress(input);
       fclose(input);
     }
-    if (counter->n != 0 && counter->c != '\0') {
-      fwrite(&counter->n, sizeof(int), 1, stdout);
-      fprintf(stdout, "%c", counter->c);
-    }
-    free(counter);
     exit(EXIT_SUCCESS);
   }
 }
 
-void compress(FILE *input, struct datum *counter) {
+void compress(FILE *input) {
   char in_buffer[BUFSIZ];
 
-  int read_count = 0;
+  // In the worst case where the file has non-repeating
+  // characters, each character will become a datum.
+  struct datum out_buffer[BUFSIZ];
+
+  int read_count = 0, pos = 0;
+
 
   while (feof(input) == 0) {
 
@@ -66,22 +54,32 @@ void compress(FILE *input, struct datum *counter) {
       exit(EXIT_FAILURE);
     }
 
-    for (int i = 0; i < read_count; i++) {
+    // initialize first_datum in the out_buffer
+    out_buffer[0].n = 1;
+    out_buffer[0].c = in_buffer[0];
+
+    for (int i = 1; i < read_count; i++) {
 
       // If there is an active count for incoming character
       // we increment the count.
       // otherwise we start a new active count.
-      if (counter->c == in_buffer[i]) {
-        counter->n++;
+      if (out_buffer[pos].c == in_buffer[i]) {
+        out_buffer[pos].n++;
       } else {
-        if (counter->n != 0 && counter->c != '\0') {
-          fwrite(&counter->n, sizeof(int), 1, stdout);
-          fprintf(stdout, "%c", counter->c);
+
+        // If out_buffer is filled, we write out to stdout
+        // and then resume counting.
+        if (pos >= BUFSIZ) {
+          fwrite(out_buffer, sizeof(struct datum), pos + 1, stdout);
+          pos = -1;
         }
-        // Reset counter
-        counter->c = in_buffer[i];
-        counter->n = 1;
+        pos++;
+        out_buffer[pos].c = in_buffer[i];
+        out_buffer[pos].n = 1;
       }
     }
+  }
+  if (pos != -1) {
+    fwrite(out_buffer, sizeof(struct datum), pos + 1, stdout);
   }
 }
