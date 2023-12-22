@@ -30,7 +30,7 @@ void uncompress(FILE *input) {
   int n;
   char c;
 
-  while (feof(input) == 0) {
+  while (1) {
 
     fread(&n, sizeof(int), 1, input);
     fread(&c, sizeof(char), 1, input);
@@ -39,15 +39,13 @@ void uncompress(FILE *input) {
       fprintf(stderr, "%s\n", "wunzip: cannot read file");
       exit(EXIT_FAILURE);
     }
-    /*
+
     if (feof(input) != 0) {
-      fprintf(stderr, "%s\n", "wunzip: invalid zip format");
-      exit(EXIT_FAILURE);
+      break;
     }
-    */
+
     for (int i = 0; i < n; i++) {
-      printf("%c", c);
+      fprintf(stdout, "%c", c);
     }
-    ;
   }
 }
