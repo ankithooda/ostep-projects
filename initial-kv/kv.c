@@ -64,7 +64,7 @@ struct command *parse_command(char* input) {
   }
 
   // Validate value for PUT
-  if ((c->type == GET ||  c->type == PUT || c->type == DEL) && c->value == NULL) {
+  if (c->type == PUT && c->value == NULL) {
     fprintf(stdout, "%s\n", bad_command);
     exit(EXIT_FAILURE);
   }
