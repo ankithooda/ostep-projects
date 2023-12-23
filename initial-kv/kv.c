@@ -74,6 +74,7 @@ int main(int argc, char **argv) {
   exit(EXIT_SUCCESS);
 }
 
+
 struct command *parse_command(char* input) {
   struct command *c;
   char *type_token, *key_token;
@@ -117,16 +118,16 @@ void kv_write(int k, char *v, FILE *db) {
   fwrite(&k, sizeof(int), 1, db);
   fwrite(&len, sizeof(int), 1, db);
   fwrite(&v, sizeof(char), len, db);
-
   fflush(db);
 }
 
 struct pair kv_read(FILE *db) {
   struct pair p;
   int len;
+
   fread(&p.key, sizeof(int), 1, db);
   fread(&len, sizeof(int), 1, db);
-  p.value = malloc(len+1);       // For \0 at the end.
+  p.value = malloc(len + 1);               // For \0 at the end.
   p.value[len] = '\0';
   fread(p.value, sizeof(char), len, db);
   return p;
@@ -145,8 +146,35 @@ void process_put(struct command input) {
   fclose(db);
 }
 
-void process_get(struct command input) {;}
-void process_del(struct command input) {;}
+
+void process_get(struct command input) {
+  FILE *db = fopen(db_file, "r");
+  struct pair p;
+
+  if (db == NULL) {
+    fprintf(stderr, "%s\n", file_open_error);
+    exit(EXIT_FAILURE);
+  }
+
+  while(1) {
+    p = kv_read(db);
+    if (feof(db) != 0 || ferror(db) != 0) {
+      break;
+    }
+    if (input.key == p.key) {
+      fprintf(stdout, "%d,%s\n", p.key, p.value);
+      exit(EXIT_SUCCESS);
+    } else {
+      continue;
+    }
+  }
+}
+
+
+void process_del(struct command input) {
+  ;
+}
+
 
 void process_clr(void) {
 
@@ -167,14 +195,22 @@ void process_clr(void) {
   }
 }
 
+
 void process_all(void) {
   FILE *db = fopen(db_file, "r");
+  struct pair p;
 
   if (db == NULL) {
     fprintf(stderr, "%s\n", file_open_error);
     exit(EXIT_FAILURE);
   }
 
-  fclose(db);
+  while(1) {
+    p = kv_read(db);
+    if (feof(db) != 0 || ferror(db) != 0) {
+      break;
+    }
+    fprintf(stdout, "%d,%s\n", p.key, p.value);
+  }
   exit(EXIT_SUCCESS);
 }
