@@ -217,7 +217,8 @@ void process_clr(void) {
   }
 }
 
-
+// TODO : Current implementations returns deleted keys
+// Create a separate tombstone file.
 void process_all(void) {
   FILE *db = fopen(db_file, "r");
   struct pair p;
