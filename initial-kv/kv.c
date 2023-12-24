@@ -177,7 +177,7 @@ void process_get(struct command input) {
     }
   }
   if (found_pair.value[0] == '\0') {
-    fprintf(stdout, "%s\n", "kv: key not found");
+    fprintf(stdout, "%d not found\n", input.key);
   } else {
     fprintf(stdout, "%d,%s\n", found_pair.key, found_pair.value);
   }
