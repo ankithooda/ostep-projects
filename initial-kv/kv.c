@@ -117,7 +117,9 @@ void kv_write(int k, char *v, FILE *db) {
 
   fwrite(&k, sizeof(int), 1, db);
   fwrite(&len, sizeof(int), 1, db);
-  fwrite(&v, sizeof(char), len, db);
+  if (len != 0) {
+    fwrite(v, sizeof(char), len, db);
+  }
   fflush(db);
 }
 
@@ -129,7 +131,9 @@ struct pair kv_read(FILE *db) {
   fread(&len, sizeof(int), 1, db);
   p.value = malloc(len + 1);               // For \0 at the end.
   p.value[len] = '\0';
-  fread(p.value, sizeof(char), len, db);
+  if (len != 0) {
+    fread(p.value, sizeof(char), len, db);
+  }
   return p;
 }
 
@@ -150,6 +154,10 @@ void process_put(struct command input) {
 void process_get(struct command input) {
   FILE *db = fopen(db_file, "r");
   struct pair p;
+  struct pair found_pair;
+
+  found_pair.key = 0;
+  found_pair.value = "\0";
 
   if (db == NULL) {
     fprintf(stderr, "%s\n", file_open_error);
@@ -162,17 +170,31 @@ void process_get(struct command input) {
       break;
     }
     if (input.key == p.key) {
-      fprintf(stdout, "%d,%s\n", p.key, p.value);
-      exit(EXIT_SUCCESS);
+      found_pair.key = p.key;
+      found_pair.value = p.value;
     } else {
       continue;
     }
   }
+  if (found_pair.value[0] == '\0') {
+    fprintf(stdout, "%s\n", "kv: key not found");
+  } else {
+    fprintf(stdout, "%d,%s\n", found_pair.key, found_pair.value);
+  }
+  exit(EXIT_SUCCESS);
 }
 
-
+// TIL : do not fwrite to a file opened in read mode
 void process_del(struct command input) {
-  ;
+
+  FILE *db = fopen(db_file, "a");
+
+  if (db == NULL) {
+    fprintf(stderr, "%s\n", file_open_error);
+    exit(EXIT_FAILURE);
+  }
+  kv_write(input.key, "", db);
+  fclose(db);
 }
 
 
