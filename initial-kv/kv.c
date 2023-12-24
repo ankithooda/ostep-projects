@@ -160,8 +160,7 @@ void process_get(struct command input) {
   found_pair.value = "\0";
 
   if (db == NULL) {
-    fprintf(stderr, "%s\n", file_open_error);
-    exit(EXIT_FAILURE);
+    exit(EXIT_SUCCESS);
   }
 
   while(1) {
