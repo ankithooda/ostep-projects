@@ -6,7 +6,7 @@ Warmup
 - [x] initial-utilities/wzip
 - [x] initial-reverse
 - [x] processes-shell
-- [ ] initial-kv
+- [x] initial-kv
 - [ ] initial-memcached
 
 Kernel Hacking
