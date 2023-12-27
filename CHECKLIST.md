@@ -7,7 +7,7 @@ Warmup
 - [x] initial-reverse
 - [x] processes-shell
 - [x] initial-kv
-- [ ] initial-memcached
+- [x] initial-memcached
 
 Kernel Hacking
 - [ ] scheduling-xv6-lottery
