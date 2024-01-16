@@ -12,7 +12,7 @@ Warmup
 Kernel Hacking
 - [ ] scheduling-xv6-lottery
 - [x] initial-xv6
-- [ ] initial-xv6-tracer
+- [x] initial-xv6-tracer (see - https://github.com/ankithooda/xv6-public/tree/initial-xv6-tracer)
 - [ ] vm-xv6-intro
 - [ ] concurrency-xv6-threads
 
