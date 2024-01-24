@@ -15,6 +15,7 @@ Initial xv6 & Virtualization
 - [x] initial-xv6-tracer (see - https://github.com/ankithooda/xv6-public/tree/initial-xv6-tracer)
 - [ ] xv6-alarm - https://pdos.csail.mit.edu/6.828/2017/homework/xv6-alarm.html
 - [ ] vm-xv6-intro
+- [ ] xv6-lazy-mem - https://pdos.csail.mit.edu/6.828/2018/homework/xv6-zero-fill.html
 
 Concurrency
 - [ ] concurrency-mapreduce
