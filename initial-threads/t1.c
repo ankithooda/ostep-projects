@@ -6,10 +6,17 @@ volatile int counter;
 
 void *mythread(void *arg) {
 
+  printf("thread %s: begin\n", (char *)arg);
+  pthread_mutex_t lock;
+  int rc = pthread_mutex_init(&lock, NULL);
+  assert(rc == 0);
+  assert(pthread_mutex_lock(&lock) == 0);
+  printf("thread %s: lock acquired\n", (char *)arg);
   for (int i = 0; i < 1000000; i++) {
     counter++;
   }
-  printf("Done\n");
+  assert(pthread_mutex_unlock(&lock) == 0);
+  printf("thread %s: Done\n", (char *)arg);
   return NULL;
 }
 
