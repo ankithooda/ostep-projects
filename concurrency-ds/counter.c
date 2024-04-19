@@ -37,7 +37,7 @@ void decrement(counter_t *c) {
 unsigned long get_count(counter_t *c) {
   int rc;
   assert(pthread_mutex_lock(&c->lock) == 0);
-  rc = c->count++;
+  rc = c->count;
   assert(pthread_mutex_unlock(&c->lock) == 0);
   return rc;
 }
