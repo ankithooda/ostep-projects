@@ -1,3 +1,6 @@
 processes-shell/bin
 processes-shell/tests-out
 initial-c/bin
+*GPATH*
+*GRTAGS*
+*GTAGS*
