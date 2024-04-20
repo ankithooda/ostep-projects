@@ -1,4 +1,7 @@
 FLAGS = -Wall -pthread -g
 
 counter:
-	gcc -o counter counter.c $(FLAGS)
+	mkdir -p bin && gcc -o bin/counter counter.c $(FLAGS)
+
+approx_counter:
+	mkdir -p bin && gcc -o bin/approx_counter approx_counter.c $(FLAGS)
