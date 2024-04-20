@@ -3,7 +3,7 @@
 #include <pthread.h>
 
 #define MILLION 1000000
-#define THREAD_COUNT 8
+#define THREAD_COUNT 256
 
 
 typedef struct __counter_ {

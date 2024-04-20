@@ -3,9 +3,9 @@
 #include <pthread.h>
 
 #define MILLION 1000000
-#define THREAD_COUNT 8
+#define THREAD_COUNT 64
 #define NUM_CPUS 8
-#define THRESHOLD 100000
+#define THRESHOLD 500000
 
 typedef struct __counter_ {
   // Global count and Global lock
@@ -31,6 +31,7 @@ void init(counter_t *c) {
     c->lcount[i] = 0;
     assert(pthread_mutex_init(&c->llock[i], NULL) == 0);
   }
+  c->threshold = THRESHOLD;
 }
 
 void destroy(counter_t *c) {
@@ -48,6 +49,7 @@ void update(counter_t *c, unsigned int thread_id, long a) {
 
   // Check if local count is greater than threshold
   if (c->lcount[i] >= c->threshold) {
+    //printf("Threshold %u - %u\n", thread_id, c->threshold);
     assert(pthread_mutex_lock(&c->glock) == 0);
     c->gcount += c->lcount[i];
     c->lcount[i] = 0;
@@ -66,7 +68,7 @@ unsigned long get_count(counter_t *c) {
 
 void *mythread(void *arg) {
   unsigned int id = *(unsigned int *)arg;
-  printf("Started Thread: %u\n", id);
+  //printf("Started Thread: %u\n", id);
   for (int i = 0; i < MILLION; i++) {
     update(&c, id, 1);
   }
@@ -76,11 +78,12 @@ void *mythread(void *arg) {
 
 int main() {
   pthread_t threads[THREAD_COUNT];
+  unsigned int thread_ids[THREAD_COUNT];
   init(&c);
 
   for (unsigned int i = 0; i < THREAD_COUNT; i++) {
-    printf("Going to spawn thread %u\n", i);
-    assert(pthread_create(&threads[i], NULL, mythread, (void *)&i) == 0);
+    thread_ids[i] = i;
+    assert(pthread_create(&threads[i], NULL, mythread, (void *)&thread_ids[i]) == 0);
   }
   for (int i = 0; i < THREAD_COUNT; i++)
     assert(pthread_join(threads[i], NULL) == 0);
