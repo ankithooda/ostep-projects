@@ -10,3 +10,6 @@ approx_counter:
 
 concurrent_ll:
 	mkdir -p bin && gcc -o bin/concurrent_ll concurrent_ll.c $(FLAGS)
+
+concurrent_q:
+	mkdir -p bin && gcc -o bin/concurrent_q concurrent_q.c $(FLAGS)
