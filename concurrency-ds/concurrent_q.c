@@ -56,7 +56,7 @@ int enqueue(queue_t *q, int value) {
       q->tail = new;
     }
     assert(pthread_mutex_unlock(&q->tail_lock) == 0);
-    printf("----> Enqueue Operation Started\n");
+    printf("----> Enqueue Operation Ended\n");
     return 0;
   }
 }
@@ -66,6 +66,7 @@ node_t *dequeue(queue_t *q) {
   printf("----> Dequeue Operation Started\n");
   assert(pthread_mutex_lock(&q->head_lock) == 0);
   if (q->head == NULL) {
+    assert(pthread_mutex_unlock(&q->head_lock) == 0);
     return NULL;
   } else {
     n = q->head;
