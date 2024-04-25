@@ -4,7 +4,7 @@
 #include <assert.h>
 
 #define MAX_THREADS 8
-#define MILLION 10
+#define MILLION 10000000
 
 typedef struct __node_t {
   int value;
@@ -40,30 +40,25 @@ int enqueue(queue_t *q, int value) {
   } else {
     new->value = value;
     new->next = NULL;
-    printf("----> Enqueue Operation Started\n");
 
     assert(pthread_mutex_lock(&q->tail_lock) == 0);
     if (q->tail == NULL) {
       q->tail = new;
       // Now we have to take another lock for the head.
-      printf("--------> Head Lock during empty enqueue started\n");
       assert(pthread_mutex_lock(&q->head_lock) == 0);
       q->head = new;
       assert(pthread_mutex_unlock(&q->head_lock) == 0);
-      printf("--------> Head Lock during empty enqueue done\n");
     } else {
       q->tail->next = new;
       q->tail = new;
     }
     assert(pthread_mutex_unlock(&q->tail_lock) == 0);
-    printf("----> Enqueue Operation Ended\n");
     return 0;
   }
 }
 
 node_t *dequeue(queue_t *q) {
   node_t *n;
-  printf("----> Dequeue Operation Started\n");
   assert(pthread_mutex_lock(&q->head_lock) == 0);
   if (q->head == NULL) {
     assert(pthread_mutex_unlock(&q->head_lock) == 0);
@@ -73,24 +68,19 @@ node_t *dequeue(queue_t *q) {
     q->head = q->head->next;
   }
   assert(pthread_mutex_unlock(&q->head_lock) == 0);
-  printf("----> Dequeue Operation Done\n");
   return n;
 }
 
 void *task(void *arg) {
   unsigned int id = *(unsigned int *)arg;
-
-  printf("Starting thread: %u\n", id);
+  printf("Started thread: %u\n", id);
   for (int i = 0; i < MILLION; i++) {
     if (i % 2 == 0) {
-      printf("Thread: %u Enqueue %d\n", id, i);
       enqueue(&data, i);
     } else {
-      printf("Thread: %u Dequeue %d\n", id, i);
       dequeue(&data);
     }
   }
-  printf("Ending thread: %u\n", id);
   return NULL;
 }
 
@@ -109,6 +99,5 @@ int main() {
   }
 
   printf("All threads done\n");
-
   return 0;
 }

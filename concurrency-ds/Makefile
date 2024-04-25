@@ -13,3 +13,7 @@ concurrent_ll:
 
 concurrent_q:
 	mkdir -p bin && gcc -o bin/concurrent_q concurrent_q.c $(FLAGS)
+
+concurrent_q_better:
+	mkdir -p bin && gcc -o bin/concurrent_q_better concurrent_q_better.c $(FLAGS)
+
