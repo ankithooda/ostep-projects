@@ -4,7 +4,7 @@
 #include <assert.h>
 
 #define MAX_THREADS 8
-#define MILLION 10000000
+#define MILLION 1000000
 
 typedef struct __node_t {
   int value;
@@ -64,8 +64,16 @@ node_t *dequeue(queue_t *q) {
     assert(pthread_mutex_unlock(&q->head_lock) == 0);
     return NULL;
   } else {
+
     n = q->head;
     q->head = q->head->next;
+
+    // If there was one element in the list
+    if (q->head == NULL) {
+      assert(pthread_mutex_lock(&q->tail_lock) == 0);
+      q->tail = NULL;
+      assert(pthread_mutex_unlock(&q->tail_lock) == 0);
+    }
   }
   assert(pthread_mutex_unlock(&q->head_lock) == 0);
   return n;
