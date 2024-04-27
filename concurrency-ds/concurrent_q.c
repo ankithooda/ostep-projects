@@ -3,8 +3,8 @@
 #include <pthread.h>
 #include <assert.h>
 
-#define MAX_THREADS 8
-#define MILLION 1000000
+#define MAX_THREADS 1
+#define MILLION 10
 
 typedef struct __node_t {
   int value;
@@ -57,18 +57,23 @@ int enqueue(queue_t *q, int value) {
   }
 }
 
-node_t *dequeue(queue_t *q) {
+int dequeue(queue_t *q, int *v) {
   node_t *n;
   assert(pthread_mutex_lock(&q->head_lock) == 0);
   if (q->head == NULL) {
     assert(pthread_mutex_unlock(&q->head_lock) == 0);
-    return NULL;
+    return -1;
   } else {
 
+    // Set node's value in the destination address.
+    *v = q->head->value;
+
+    // Update the head pointer
     n = q->head;
     q->head = q->head->next;
 
     // If there was one element in the list
+    // tail is also updated.
     if (q->head == NULL) {
       assert(pthread_mutex_lock(&q->tail_lock) == 0);
       q->tail = NULL;
@@ -76,19 +81,38 @@ node_t *dequeue(queue_t *q) {
     }
   }
   assert(pthread_mutex_unlock(&q->head_lock) == 0);
-  return n;
+
+  // free the node which have been dequeued.
+  free(n);
+  return 0;
 }
+
+void print_q(queue_t *q) {
+  node_t *t;
+  t = q->head;
+  while(t) {
+    printf("%d\n", t->value);
+    t = t->next;
+  }
+}
+
 
 void *task(void *arg) {
   unsigned int id = *(unsigned int *)arg;
+  int *value = malloc(sizeof(int));
   printf("Started thread: %u\n", id);
   for (int i = 0; i < MILLION; i++) {
-    if (i % 2 == 0) {
+    if (i % 3 != 0) {
       enqueue(&data, i);
+      //printf("After enqueue\n");
+      //print_q(&data);
     } else {
-      dequeue(&data);
+      dequeue(&data, value);
+      //printf("After dequeue\n");
+      //print_q(&data);
     }
   }
+  free(value);
   return NULL;
 }
 
