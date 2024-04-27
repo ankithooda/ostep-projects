@@ -56,32 +56,54 @@ int enqueue(queue_t *q, int value) {
   return 0;
 }
 
-node_t *dequeue(queue_t *q) {
-  node_t *head, *new_head;
+int dequeue(queue_t *q, int *v) {
+  node_t *head, *dummy_head;
+  int ret;
 
   assert(pthread_mutex_lock(&q->head_lock) == 0);
-  head = q->head;
-  new_head = head->next;
 
-  if (new_head == NULL) {
-    head = NULL;
+  // In this implementation, the q->head is
+  // either a dummy node or a node which has been dequeued.
+  dummy_head = q->head;
+  head = q->head->next;  // This is the logical head of the queue.
+
+  if (head == NULL) {
+    ret = -1;
   } else {
-    q->head = new_head;
+    *v = head->value;
+    free(dummy_head);
+    q->head = head;
+    ret = 0;
   }
-
   assert(pthread_mutex_unlock(&q->head_lock) == 0);
-  return head;
+  return ret;
+}
+
+void print_q(queue_t *q) {
+  node_t *t;
+  t = q->head;
+  while(t) {
+    printf("%d\n", t->value);
+    t = t->next;
+  }
 }
 
 void *task(void *arg) {
   unsigned int id = *(unsigned int*)arg;
+  int *v = malloc(sizeof(int));
   printf("Started Thread: %u\n", id);
   for (int i = 0; i < MILLION; i++) {
-    if (i % 2 == 0)
+    if (i % 3 != 0) {
       enqueue(&data, i);
-    else
-      dequeue(&data);
+      //printf("After enqueue\n");
+      //print_q(&data);
+    } else {
+      dequeue(&data, v);
+      //printf("After enqueue\n");
+      //print_q(&data);
+    }
   }
+  free(v);
   return NULL;
 }
 

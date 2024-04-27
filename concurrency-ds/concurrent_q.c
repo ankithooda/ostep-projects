@@ -3,8 +3,8 @@
 #include <pthread.h>
 #include <assert.h>
 
-#define MAX_THREADS 1
-#define MILLION 10
+#define MAX_THREADS 8
+#define MILLION 10000000
 
 typedef struct __node_t {
   int value;
